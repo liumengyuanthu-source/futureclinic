@@ -8,12 +8,13 @@
 <title>Prudential Future Clinic — Research & Decision Map</title>
 <style>
   :root {
+    color-scheme: light;
     --pru-red: #da291c;
     --pru-deep: #6d150e;
     --ink: #1c1d1b;
     --charcoal: #373a36;
     --muted: #696b68;
-    --paper: #fffcfa;
+    --paper: #ffffff;
     --paper-warm: #fff7f5;
     --surface: #ffffff;
     --surface-2: #fbf4f1;
@@ -35,27 +36,6 @@
     --radius: 14px;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ink: #f7efeb;
-      --charcoal: #e3d8d2;
-      --muted: #b7aaa4;
-      --paper: #181412;
-      --paper-warm: #211715;
-      --surface: #241d1a;
-      --surface-2: #2d221f;
-      --surface-3: #342724;
-      --line: rgba(255,255,255,.09);
-      --line-strong: rgba(255,255,255,.18);
-      --red-soft: rgba(218,41,28,.13);
-      --red-pale: rgba(218,41,28,.28);
-      --sage-soft: rgba(78,113,76,.19);
-      --gold-soft: rgba(177,120,33,.16);
-      --blue-soft: rgba(83,104,114,.22);
-      --shadow: 0 14px 40px rgba(0,0,0,.22);
-    }
-  }
-
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
@@ -63,8 +43,8 @@
     min-height: 100vh;
     color: var(--ink);
     background:
-      radial-gradient(ellipse at 15% 0%, rgba(218,41,28,.09), transparent 34rem),
-      radial-gradient(ellipse at 88% 18%, rgba(78,113,76,.07), transparent 28rem),
+      radial-gradient(ellipse at 15% 0%, rgba(218,41,28,.055), transparent 34rem),
+      radial-gradient(ellipse at 88% 18%, rgba(78,113,76,.035), transparent 28rem),
       var(--paper);
     font-family: var(--font-body);
     font-size: 16px;
