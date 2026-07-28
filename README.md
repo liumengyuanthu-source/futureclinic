@@ -1,15 +1,20 @@
-# Future Clinic Research & Decision Map
+# PHKL Future Clinic Scenario Studio
 
-An evidence-led, discussion-oriented research prototype for exploring the future of clinic management across customer, doctor, agent, operations, data and AI perspectives.
+An interactive Option B prototype for reviewing the proposed future clinic journey before detailed scenario design.
+
+## What this version covers
+
+- Core personas: clinic administrator, nurse, contracted doctor and underwriter
+- AS-IS pain points, opportunities, TO-BE experience and KPI hypotheses
+- Clinic, doctor, underwriting and operations workspaces
+- Two synthetic cases demonstrating straight-through and clarification paths
+- Evidence-linked AI suggestions with explicit human decision boundaries
+- A vision-only external-provider scenario for later validation
 
 ## How to use it
 
-- **Learning view** expands the industry landscape, operating model, stakeholder journeys, system layers, evidence and research plan.
-- **GM view** compresses the material into decision themes for leadership discussion.
-- Filters help distinguish evidence from hypotheses and switch between business, experience, operations, technology and governance lenses.
+Start in the Scenario Studio. Select a persona or scenario to open a centred story modal, then enter the interactive workspace. Applicant and adviser channels remain context-only under the agreed Option B scope.
 
-The site is a self-contained static HTML document and is published with GitHub Pages.
+## Prototype status
 
-## Research status
-
-This is an independent research and discussion prototype. It is not affiliated with or endorsed by Prudential. Company and product names belong to their respective owners. Assertions labelled as hypotheses or working assumptions require validation through stakeholder interviews, operational data and primary research.
+This is a discussion prototype, not a production system. All people, identifiers, medical data, product rules and outcomes are synthetic. Items marked with `*` are assumptions or conceptual AI capabilities requiring PHKL confirmation.
