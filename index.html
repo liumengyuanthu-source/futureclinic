@@ -1,17 +1,1493 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="PHKL Future Clinic Scenario Studio — an interactive Option B prototype for reviewing personas, current-state pain points, future workflows, AI boundaries and measurable outcomes."
-    />
-    <title>PHKL Future Clinic Scenario Studio</title>
-    <script type="module" crossorigin src="./assets/index-DHUyY8lx.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-EWNWllwY.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<!DOCTYPE html>
+<html lang="zh-Hant" data-view="learning">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Prudential Future Clinic 行業學習、證據地圖、調研方法與 GM 討論視圖">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<title>Prudential Future Clinic — 調研與決策地圖</title>
+<style>
+  :root {
+    color-scheme: light;
+    --pru-red: #da291c;
+    --pru-deep: #6d150e;
+    --ink: #1c1d1b;
+    --charcoal: #373a36;
+    --muted: #696b68;
+    --paper: #ffffff;
+    --paper-warm: #fff7f5;
+    --surface: #ffffff;
+    --surface-2: #fbf4f1;
+    --surface-3: #f5ece8;
+    --line: rgba(28,29,27,.10);
+    --line-strong: rgba(28,29,27,.19);
+    --red-soft: #fbeae8;
+    --red-pale: #f6c9c6;
+    --sage: #4e714c;
+    --sage-soft: #eef4ed;
+    --gold: #b17821;
+    --gold-soft: #fff7e6;
+    --blue-grey: #536872;
+    --blue-soft: #eef3f5;
+    --font-display: "Iowan Old Style","Songti TC","STSong",Georgia,serif;
+    --font-body: Aptos,"PingFang TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif;
+    --font-mono: "SFMono-Regular",Menlo,Consolas,monospace;
+    --shadow: 0 14px 40px rgba(54,28,18,.08), 0 2px 8px rgba(54,28,18,.04);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse at 15% 0%, rgba(218,41,28,.055), transparent 34rem),
+      radial-gradient(ellipse at 88% 18%, rgba(78,113,76,.035), transparent 28rem),
+      var(--paper);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.62;
+    overflow-wrap: break-word;
+  }
+  button, select { font: inherit; }
+  a { color: var(--pru-deep); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { color: var(--pru-red); }
+  h1, h2, h3, h4 { margin: 0; color: var(--ink); text-wrap: balance; }
+  h1, h2 { font-family: var(--font-display); font-weight: 600; }
+  h1 { font-size: clamp(2.65rem, 6.2vw, 5.7rem); line-height: .98; letter-spacing: -.055em; }
+  h2 { font-size: clamp(2rem, 3.8vw, 3.35rem); line-height: 1.05; letter-spacing: -.035em; }
+  h3 { font-size: 1.16rem; line-height: 1.3; }
+  h4 { font-size: .98rem; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: .65em 0; padding-left: 1.35em; }
+  li + li { margin-top: .35em; }
+  .wrap {
+    width: min(1540px, 100%);
+    margin: 0 auto;
+    padding: 28px 32px 80px;
+    display: grid;
+    grid-template-columns: 210px minmax(0,1fr);
+    gap: 0 42px;
+  }
+  .main { min-width: 0; }
+  .main > * { min-width: 0; }
+
+  .toc {
+    position: sticky;
+    top: 18px;
+    align-self: start;
+    grid-row: 1 / -1;
+    max-height: calc(100dvh - 36px);
+    overflow-y: auto;
+    padding: 12px 0;
+    scrollbar-width: thin;
+  }
+  .public-mark {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 0 0 26px;
+    padding: 12px 14px 11px;
+    border: 1px solid var(--line-strong);
+    border-left: 4px solid var(--pru-red);
+    border-radius: 4px;
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .public-mark strong {
+    font: 700 17px/.92 var(--font-display);
+    letter-spacing: -.02em;
+  }
+  .public-mark span {
+    color: var(--muted);
+    font: 700 8px/1 var(--font-mono);
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+  .toc-title {
+    margin-bottom: 10px;
+    padding: 0 6px 9px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font: 700 9px/1.2 var(--font-mono);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+  .toc a {
+    display: block;
+    margin: 1px 0;
+    padding: 7px 9px;
+    border-left: 2px solid transparent;
+    border-radius: 0 6px 6px 0;
+    color: var(--muted);
+    font-size: .76rem;
+    line-height: 1.25;
+    text-decoration: none;
+    transition: .16s ease;
+  }
+  .toc a:hover { color: var(--ink); background: var(--surface-2); }
+  .toc a.active { color: var(--ink); border-left-color: var(--pru-red); background: var(--red-soft); }
+
+  .hero {
+    min-height: 78vh;
+    padding: clamp(38px,7vh,84px) 0 48px;
+    display: grid;
+    align-content: center;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: 2%;
+    top: 8%;
+    width: min(34vw,430px);
+    aspect-ratio: 1;
+    border: 1px solid var(--red-pale);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 48px rgba(218,41,28,.025), inset 0 0 0 96px rgba(218,41,28,.018);
+    pointer-events: none;
+  }
+  .eyebrow, .section-kicker, .label {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  .eyebrow { color: var(--pru-red); margin-bottom: 18px; }
+  .hero h1 { max-width: 980px; position: relative; z-index: 1; }
+  .hero h1 .red { color: var(--pru-red); }
+  .hero-judgement {
+    max-width: 940px;
+    margin: 28px 0 20px;
+    font-size: clamp(1.18rem, 1.8vw, 1.6rem);
+    line-height: 1.45;
+    color: var(--charcoal);
+    position: relative;
+    z-index: 1;
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .meta-pill, .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 10px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    color: var(--muted);
+    font: 600 .68rem/1.2 var(--font-mono);
+  }
+  .meta-pill strong { color: var(--ink); }
+  .hero-note { margin-top: 20px; max-width: 72ch; color: var(--muted); font-size: .83rem; }
+
+  .control-dock {
+    position: sticky;
+    top: 14px;
+    z-index: 90;
+    margin: 24px 0 58px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    box-shadow: 0 6px 24px rgba(40,20,15,.07);
+    backdrop-filter: blur(16px);
+  }
+  .control-top, .control-groups, .control-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .control-top { justify-content: space-between; }
+  .control-groups { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .control-group { gap: 5px; }
+  .control-label { margin-right: 3px; color: var(--muted); font: 700 .61rem/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
+  .segmented { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+  .view-btn, .filter-btn, .utility-btn {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 7px 10px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .76rem;
+    line-height: 1;
+    transition: .16s ease;
+  }
+  .view-btn:hover, .filter-btn:hover, .utility-btn:hover { color: var(--ink); background: var(--surface); border-color: var(--line); }
+  .view-btn.active { color: #fff; background: var(--pru-red); }
+  .filter-btn.active { color: var(--ink); background: var(--surface); border-color: var(--line-strong); box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .utility-btn { border-color: var(--line); background: var(--surface); }
+  .topic-select {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 28px 6px 9px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: .76rem;
+  }
+  .result-count { color: var(--muted); font: .66rem/1.2 var(--font-mono); }
+
+  .section {
+    padding: 0 0 96px;
+    scroll-margin-top: 28px;
+  }
+  .section-head {
+    display: grid;
+    grid-template-columns: 72px minmax(0,1fr);
+    gap: 18px;
+    align-items: start;
+    margin-bottom: 30px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-strong);
+    scroll-margin-top: 98px;
+  }
+  .section-num { color: var(--pru-red); font: 700 .7rem/1 var(--font-mono); letter-spacing: .15em; padding-top: 10px; }
+  .section-intro { max-width: 80ch; margin-top: 10px; color: var(--muted); font-size: 1rem; }
+  .section-kicker { color: var(--pru-red); margin-bottom: 8px; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid.two { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .grid.three { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .grid.four { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .grid > *, .lane-grid > *, .timeline > * { min-width: 0; }
+  .card {
+    position: relative;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .card.elevated { box-shadow: var(--shadow); }
+  .card.recessed { background: var(--surface-2); box-shadow: inset 0 1px 3px rgba(0,0,0,.04); }
+  .card.hero-card { background: color-mix(in srgb, var(--surface) 91%, var(--red-soft) 9%); border-color: var(--red-pale); box-shadow: var(--shadow); }
+  .card.accent-red { border-top: 3px solid var(--pru-red); }
+  .card.accent-sage { border-top: 3px solid var(--sage); }
+  .card.accent-gold { border-top: 3px solid var(--gold); }
+  .card h3, .card h4 { margin-bottom: 8px; }
+  .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+  .card .lead { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.28; }
+  .micro { color: var(--muted); font-size: .78rem; line-height: 1.5; }
+  .evidence-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+  .evidence-id { color: var(--muted); font: 600 .63rem/1.2 var(--font-mono); }
+  .badge.fact { color: var(--sage); background: var(--sage-soft); }
+  .badge.signal { color: var(--gold); background: var(--gold-soft); }
+  .badge.hypothesis { color: var(--pru-deep); background: var(--red-soft); }
+  .badge.unknown { color: var(--blue-grey); background: var(--blue-soft); }
+  .badge.decision { color: #fff; background: var(--pru-red); border-color: var(--pru-red); }
+  .priority {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    color: var(--muted);
+    font: 700 .62rem/1 var(--font-mono);
+    letter-spacing: .08em;
+  }
+  .priority.p0 { color: var(--pru-red); }
+  .priority.p1 { color: var(--gold); }
+  .priority.p2 { color: var(--blue-grey); }
+  .decision-card { min-height: 196px; padding-right: 50px; }
+  .decision-card .question { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.25; margin-bottom: 14px; }
+
+  .split {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .split > div { padding: 22px; background: var(--surface); }
+  .split > div + div { border-left: 1px solid var(--line); }
+  .split .no { background: var(--surface-2); }
+  .split h3 { margin-bottom: 10px; }
+  .split .yes h3 { color: var(--sage); }
+  .split .no h3 { color: var(--pru-deep); }
+
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    padding: 4px 0 12px;
+    scrollbar-width: thin;
+  }
+  .pipeline-step {
+    flex: 1 0 150px;
+    min-width: 150px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .pipeline-step strong { display: block; font-size: .88rem; }
+  .pipeline-step small { color: var(--muted); line-height: 1.4; display: block; margin-top: 6px; }
+  .pipeline-arrow { flex: 0 0 30px; display: grid; place-items: center; color: var(--pru-red); font-size: 1.2rem; }
+  .pipeline.commitment .pipeline-step { border-top: 3px solid var(--pru-red); }
+
+  .table-wrap { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: .8rem; line-height: 1.5; }
+  th {
+    padding: 12px 14px;
+    text-align: left;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-bottom: 2px solid var(--line-strong);
+    font: 700 .62rem/1.35 var(--font-mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  td { padding: 13px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:nth-child(even) { background: color-mix(in srgb, var(--red-soft) 30%, transparent); }
+  tbody tr:hover { background: var(--surface-2); }
+  td.wide { min-width: 220px; max-width: 460px; }
+
+  details {
+    margin-top: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 18px;
+    color: var(--ink);
+    font-size: .82rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "＋"; color: var(--pru-red); font-family: var(--font-mono); }
+  details[open] summary::before { content: "−"; }
+  .detail-body { padding: 2px 18px 18px; border-top: 1px solid var(--line); color: var(--charcoal); font-size: .88rem; }
+
+  .model-shell {
+    position: relative;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+  .model-center {
+    max-width: 760px;
+    margin: 0 auto 18px;
+    padding: 22px;
+    border: 2px solid var(--pru-red);
+    border-radius: 18px;
+    background: var(--surface);
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .model-center h3 { font-family: var(--font-display); font-size: 1.65rem; }
+  .state-grid { display: grid; grid-template-columns: repeat(5,minmax(135px,1fr)); gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+  .state {
+    min-width: 135px;
+    padding: 13px;
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--state-color, var(--muted));
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .state strong { display: block; font-size: .8rem; }
+  .state span { display: block; margin-top: 4px; color: var(--muted); font-size: .7rem; }
+
+  .lane-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  .zoomable { position: relative; }
+  .zoom-btn {
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    z-index: 8;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 9px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    color: var(--muted);
+    cursor: pointer;
+    font: 700 .62rem/1 var(--font-mono);
+    backdrop-filter: blur(8px);
+  }
+  .zoom-btn:hover { color: var(--pru-red); border-color: var(--red-pale); }
+  .visual-dialog {
+    width: min(96vw, 1440px);
+    max-width: none;
+    max-height: 92vh;
+    padding: 48px 22px 22px;
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 28px 90px rgba(0,0,0,.26);
+    overflow: auto;
+  }
+  .visual-dialog::backdrop { background: rgba(28,29,27,.58); backdrop-filter: blur(4px); }
+  .dialog-close { position: absolute; top: 10px; right: 12px; }
+  .visual-dialog .lane-wrap { overflow: visible; }
+  .visual-dialog .lane-grid { min-width: 1100px; }
+  .lane-grid {
+    min-width: 980px;
+    display: grid;
+    grid-template-columns: 125px repeat(6,1fr);
+  }
+  .lane-grid > div { min-height: 78px; padding: 11px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .lane-grid > div:nth-child(7n) { border-right: 0; }
+  .lane-grid .head { min-height: auto; color: var(--muted); background: var(--surface-2); font: 700 .62rem/1.3 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+  .lane-grid .role { font-weight: 700; font-size: .78rem; background: var(--surface-2); }
+  .lane-grid .cell { font-size: .74rem; line-height: 1.42; position: relative; }
+  .lane-grid .cell::after { content: "→"; position: absolute; right: -8px; top: 50%; z-index: 2; color: var(--pru-red); font-weight: 700; }
+  .lane-grid .cell.end::after { display: none; }
+  .lane-grid .risk { background: var(--gold-soft); }
+  .lane-grid .platform { background: var(--red-soft); }
+
+  .layer-stack { display: grid; gap: 10px; }
+  .layer {
+    display: grid;
+    grid-template-columns: 190px minmax(0,1fr);
+    gap: 18px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--layer-color, var(--pru-red));
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .layer-title { font-weight: 700; }
+  .layer-desc { color: var(--muted); font-size: .82rem; }
+
+  .horizon {
+    display: grid;
+    grid-template-columns: 92px minmax(0,1fr);
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .horizon:last-child { border-bottom: 0; }
+  .horizon-code { font-family: var(--font-display); color: var(--pru-red); font-size: 1.7rem; }
+  .horizon strong { display: block; margin-bottom: 4px; }
+  .horizon p { color: var(--muted); font-size: .83rem; margin: 0; }
+
+  .timeline { display: grid; grid-template-columns: repeat(8,minmax(132px,1fr)); overflow-x: auto; padding: 8px 0 14px; }
+  .week {
+    min-width: 132px;
+    position: relative;
+    padding: 20px 14px 14px;
+    border-top: 3px solid var(--pru-red);
+    background: var(--surface);
+  }
+  .week::before { content: ""; position: absolute; width: 11px; height: 11px; left: 0; top: -7px; border-radius: 50%; background: var(--pru-red); }
+  .week + .week { border-left: 1px solid var(--line); }
+  .week strong { display: block; font-size: .78rem; }
+  .week span { display: block; color: var(--muted); font-size: .68rem; line-height: 1.45; margin-top: 6px; }
+
+  .capability-band {
+    display: grid;
+    grid-template-columns: repeat(5,minmax(0,1fr));
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .capability-band > div {
+    padding: 15px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .capability-band strong { display: block; font-size: .78rem; margin-bottom: 5px; }
+  .capability-band span { color: var(--muted); font-size: .68rem; line-height: 1.4; display: block; }
+
+  .callout {
+    margin: 18px 0;
+    padding: 18px 20px;
+    border-left: 4px solid var(--pru-red);
+    border-radius: 0 12px 12px 0;
+    background: var(--red-soft);
+  }
+  .callout strong { color: var(--pru-deep); }
+  .presenter-note {
+    margin: 10px 0 0;
+    padding-left: 12px;
+    border-left: 2px solid var(--red-pale);
+    color: var(--muted);
+    font-size: .78rem;
+  }
+  .quote {
+    margin: 26px 0;
+    padding: 22px 0 22px 24px;
+    border-left: 3px solid var(--pru-red);
+    font: 1.45rem/1.45 var(--font-display);
+    max-width: 40ch;
+  }
+  .source-list { columns: 2; column-gap: 30px; }
+  .source-list li { break-inside: avoid; margin-bottom: 8px; font-size: .78rem; }
+  .source-list code { color: var(--muted); font: .64rem var(--font-mono); }
+
+  .filterable[hidden] { display: none !important; }
+  .gm-only { display: none; }
+  html[data-view="gm"] .gm-only { display: block; }
+  html[data-view="gm"] .meta-pill.gm-only { display: inline-flex; }
+  html[data-view="gm"] .learning-only { display: none !important; }
+  html[data-view="gm"] .hero { min-height: 58vh; }
+  html[data-view="gm"] .detail-learning { display: none; }
+  html[data-view="gm"] .section:not(#gm):not(#sources) { display: none; }
+  html[data-view="gm"] .toc a:not([href="#gm"]):not([href="#sources"]) { display: none; }
+  .empty-message { display: none; padding: 18px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--muted); font-size: .82rem; }
+
+  footer {
+    padding-top: 28px;
+    border-top: 1px solid var(--line-strong);
+    color: var(--muted);
+    font-size: .76rem;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero > *, .section-head { animation: fadeUp .45s ease both; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
+
+  @media (max-width: 1180px) {
+    .grid.four { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .grid.three { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .capability-band { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  }
+  @media (max-width: 1000px) {
+    .wrap { grid-template-columns: 1fr; padding: 0 24px 60px; }
+    .toc {
+      position: sticky; top: 0; z-index: 200; grid-row: auto;
+      max-height: none; display: flex; align-items: center; gap: 3px;
+      margin: 0 -24px; padding: 9px 24px; overflow-x: auto;
+      background: color-mix(in srgb, var(--paper) 94%, transparent);
+      border-bottom: 1px solid var(--line); backdrop-filter: blur(14px);
+    }
+    .public-mark, .toc-title { display: none; }
+    .toc a { flex: 0 0 auto; white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0; font-size: .66rem; padding: 6px 8px; }
+    .toc a.active { border-left: 0; border-bottom-color: var(--pru-red); }
+    .hero { min-height: 72vh; }
+    .section-head { scroll-margin-top: 54px; }
+    .control-dock { top: 53px; }
+    .state-grid { grid-template-columns: repeat(5,150px); }
+  }
+  @media (max-width: 720px) {
+    body { font-size: 15px; }
+    .wrap { padding-left: 16px; padding-right: 16px; }
+    .toc { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+    .hero { min-height: 66vh; padding-top: 42px; }
+    .hero::after { width: 58vw; opacity: .65; }
+    .hero-judgement { font-size: 1.08rem; }
+    .control-dock { position: relative; top: auto; margin-bottom: 48px; }
+    .control-top { align-items: flex-start; }
+    .control-groups { align-items: flex-start; }
+    .grid.two, .grid.three, .grid.four { grid-template-columns: 1fr; }
+    .split { grid-template-columns: 1fr; }
+    .split > div + div { border-left: 0; border-top: 1px solid var(--line); }
+    .section { padding-bottom: 72px; }
+    .section-head { grid-template-columns: 40px minmax(0,1fr); gap: 10px; }
+    .section-intro { font-size: .9rem; }
+    .capability-band { grid-template-columns: 1fr 1fr; }
+    .layer { grid-template-columns: 1fr; gap: 4px; }
+    .source-list { columns: 1; }
+  }
+  @media print {
+    :root { --paper:#fff; --surface:#fff; --surface-2:#faf7f5; --ink:#111; --muted:#555; }
+    body { background:#fff; font-size: 10pt; }
+    .wrap { display:block; max-width:none; padding:0; }
+    .toc, .control-dock, .utility-btn { display:none !important; }
+    .zoom-btn, .visual-dialog { display:none !important; }
+    .hero { min-height:0; padding:18mm 0 12mm; }
+    .hero::after { display:none; }
+    .section { padding-bottom:14mm; break-inside:auto; }
+    .section-head { break-after:avoid; }
+    .card, .table-wrap, .model-shell, details { break-inside:avoid; box-shadow:none !important; }
+    details:not([open]) > *:not(summary) { display:block; }
+    details summary::before { display:none; }
+    a { color:#111; text-decoration:none; }
+    a[href^="http"]::after { content:" (" attr(href) ")"; font-size:7pt; overflow-wrap:anywhere; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="章節導航">
+    <div class="public-mark" aria-label="Future Clinic research map"><strong>FUTURE<br>CLINIC</strong><span>研究地圖</span></div>
+    <div class="toc-title">研究地圖</div>
+    <a href="#orientation" class="active">00 判斷與邊界</a>
+    <a href="#industry">01 行業 101</a>
+    <a href="#prudential">02 Prudential 現況</a>
+    <a href="#people">03 人與生態</a>
+    <a href="#journey">04 旅程與營運</a>
+    <a href="#systems">05 系統與資料</a>
+    <a href="#ai">06 AI 與治理</a>
+    <a href="#benchmarks">07 案例與遷移</a>
+    <a href="#research">08 詳細調研計劃</a>
+    <a href="#gm">09 GM 匯報版</a>
+    <a href="#sources">來源</a>
+  </nav>
+
+  <main class="main">
+    <header class="hero">
+      <div class="eyebrow">Future Clinic · 證據導向討論原型 · 2026 年 7 月 29 日更新</div>
+      <h1>
+        <span class="learning-only">把「診所系統」重新定義為<br><span class="red">可兌現的醫療服務承諾</span></span>
+        <span class="gm-only">把「診所系統」重新定義為<br><span class="red">可問責的醫療服務承諾</span></span>
+      </h1>
+      <p class="hero-judgement learning-only">Prudential 的機會不是再做一個醫療 App，也不是替醫院重建 EMR；更可能是把現有網絡、直付、預授權、顧問和跨境合作連成一個可承諾、可追蹤、可恢復、可治理的醫療服務編排層。</p>
+      <p class="hero-judgement gm-only">機會不是再做一個醫療 App，也不是替換 EMR；更可能是建立一個服務編排層，把 Prudential 的網絡、直付、預授權、顧問和跨境資產，轉化為可承諾、可追蹤、可恢復、可治理的服務。</p>
+      <div class="hero-meta">
+        <span class="meta-pill"><strong>83</strong> 條證據記錄</span>
+        <span class="meta-pill"><strong>29</strong> 個結構化案例</span>
+        <span class="meta-pill"><strong>18</strong> 條優先洞察</span>
+        <span class="meta-pill"><strong>7</strong> 條旅程</span>
+        <span class="meta-pill"><strong>EN + 繁中</strong> 原型要求</span>
+        <span class="meta-pill learning-only">先展開學習視圖</span>
+        <span class="meta-pill gm-only">GM 討論視圖</span>
+      </div>
+      <p class="hero-note learning-only">這是第一輪外部證據與結構化分析，不聲稱掌握 Prudential 內部流程、系統表現或客戶結果。頁面中的假設、未知和待決策項均明確標註，下一輪將通過真實 case、角色訪談和營運資料驗證。</p>
+      <p class="hero-note gm-only">目前是第一輪外部研究。Prudential 的內部流程、系統表現與客戶結果，仍需透過真實案例、角色研究與營運資料驗證。</p>
+      <div class="callout filterable" data-priority="P0" data-status="Decision,Fact,Hypothesis" data-topic="decisions" data-gm="true" style="margin-top:22px;max-width:980px;position:relative;z-index:1">
+        <strong>已納入 Roberto 反饋：</strong> 核保報告是由醫生完成的記錄。醫生或核保人員都可能要求額外檢查；原型應把這呈現為受控的證據補充要求，而不是 AI 或系統作出的最終核保決定。MedScreen+ 是已公開的 PHKL/RGA 能力訊號，但是否用作本原型的整合點，仍屬需 PHKL 驗證的假設。
+        <br><span class="micro">繁中提示：核保報告由醫生完成；醫生或核保人員可要求額外檢查；MedScreen+ 為公開能力訊號，但是否作為本原型整合點仍需 PHKL 確認。</span>
+      </div>
+    </header>
+
+    <section class="control-dock" aria-label="頁面控制">
+      <div class="control-top">
+        <div class="segmented" role="group" aria-label="閱讀視圖">
+          <button class="view-btn active" data-view="learning" type="button">學習視圖</button>
+          <button class="view-btn" data-view="gm" type="button">GM 視圖</button>
+        </div>
+        <div class="control-group">
+          <span class="result-count" id="resultCount" aria-live="polite">全部研究內容</span>
+          <button class="utility-btn" id="expandAll" type="button">展開全部</button>
+          <button class="utility-btn" id="collapseAll" type="button">收起</button>
+          <button class="utility-btn" type="button" onclick="window.print()">列印</button>
+        </div>
+      </div>
+      <div class="control-groups">
+        <div class="control-group" aria-label="優先級篩選">
+          <span class="control-label">優先級</span>
+          <button class="filter-btn active" data-kind="priority" data-value="P0" type="button">P0</button>
+          <button class="filter-btn active" data-kind="priority" data-value="P1" type="button">P1</button>
+          <button class="filter-btn active" data-kind="priority" data-value="P2" type="button">P2</button>
+        </div>
+        <div class="control-group" aria-label="證據狀態篩選">
+          <span class="control-label">證據</span>
+          <button class="filter-btn active" data-kind="status" data-value="Fact" type="button">事實</button>
+          <button class="filter-btn active" data-kind="status" data-value="Signal" type="button">訊號</button>
+          <button class="filter-btn active" data-kind="status" data-value="Hypothesis" type="button">假設</button>
+          <button class="filter-btn active" data-kind="status" data-value="Unknown" type="button">未知</button>
+          <button class="filter-btn active" data-kind="status" data-value="Decision" type="button">決策</button>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="topicFilter">主題</label>
+          <select class="topic-select" id="topicFilter">
+            <option value="all">全部主題</option>
+            <option value="industry">行業</option>
+            <option value="prudential">Prudential</option>
+            <option value="people">角色與生態</option>
+            <option value="journey">旅程與營運</option>
+            <option value="systems">系統與資料</option>
+            <option value="ai">AI 與治理</option>
+            <option value="benchmarks">案例</option>
+            <option value="research">調研與交付</option>
+            <option value="decisions">GM 決策</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="orientation">
+      <div class="section-head">
+        <div class="section-num">00</div>
+        <div>
+          <div class="section-kicker">定位</div>
+          <h2>先把問題說對，再談方案</h2>
+          <p class="section-intro">“Future Clinic Management System”容易讓討論過早滑向產品或技術。第一步是確認 Prudential 想擁有哪一段服務責任，以及用甚麼價值尺度判斷成功。</p>
+        </div>
+      </div>
+
+      <div class="split filterable" data-priority="P0" data-status="Decision,Hypothesis" data-topic="decisions" data-gm="true">
+        <div class="yes">
+          <h3>我們建議討論的邊界</h3>
+          <ul>
+            <li>以 insurer-led healthcare service orchestration 為主；</li>
+            <li>統一 case、狀態、承諾、任務、異常和 handoff；</li>
+            <li>連接客戶、醫生/醫院行政、agent、Prudential 營運與夥伴；</li>
+            <li>以明確的臨床、coverage、service 和資料責任為前提。</li>
+          </ul>
+        </div>
+        <div class="no">
+          <h3>第一轮不應默認</h3>
+          <ul>
+            <li>Prudential 經營自有臨床服務或承擔診療責任；</li>
+            <li>替換醫院 EMR 或復制完整病歷；</li>
+            <li>先選 CMS、FHIR、LLM 或平台供應商；</li>
+            <li>讓 AI 自動作臨床判斷或 coverage decision。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="quote filterable" data-priority="P0" data-status="Hypothesis" data-topic="decisions" data-gm="true">未來診所不是一個地點，而是一套跨機構仍能兌現的服務承諾。</div>
+
+      <div class="grid three">
+        <article class="card decision-card hero-card filterable" data-priority="P0" data-status="Decision" data-topic="decisions" data-gm="true">
+          <span class="priority p0">P0</span><div class="question">1. 業務邊界是甚麼？</div>
+          <p class="micro">Orchestration、owned clinical delivery，還是 hybrid？這是牌照、責任、資料、夥伴與技術路線的總開關。</p>
+          <div class="evidence-row"><span class="badge decision">決策</span><span class="evidence-id">E-0001 · E-0027 · E-0054</span></div>
+        </article>
+        <article class="card decision-card filterable" data-priority="P0" data-status="Decision" data-topic="decisions" data-gm="true">
+          <span class="priority p0">P0</span><div class="question">2. 首要價值尺度是甚麼？</div>
+          <p class="micro">Customer certainty、operations efficiency、network growth 與 claims performance 會產生不同 MVP。</p>
+          <div class="evidence-row"><span class="badge decision">決策</span><span class="evidence-id">E-0037–E-0040</span></div>
+        </article>
+        <article class="card decision-card filterable" data-priority="P0" data-status="Decision,Hypothesis" data-topic="decisions" data-gm="true">
+          <span class="priority p0">P0</span><div class="question">3. First proof 與 lighthouse？</div>
+          <p class="micro">建議用本地日間手術證明基礎編排，用跨境腫瘤展示北極星與完整控制要求。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">E-0044 · E-0047</span></div>
+        </article>
+        <article class="card decision-card filterable" data-priority="P0" data-status="Decision" data-topic="decisions" data-gm="true">
+          <span class="priority p0">P0</span><div class="question">4. 誰對端到端服務負責？</div>
+          <p class="micro">需要穩定的 non-clinical service owner；clinical、coverage 與 service authority 必須分開。</p>
+          <div class="evidence-row"><span class="badge decision">決策</span><span class="evidence-id">E-0047 · E-0066 · E-0081</span></div>
+        </article>
+        <article class="card decision-card filterable" data-priority="P0" data-status="Decision" data-topic="decisions" data-gm="true">
+          <span class="priority p0">P0</span><div class="question">5. Agent / caregiver 能看甚麼？</div>
+          <p class="micro">最小必要視圖應聚焦 consent、stage、owner、next action、due time 與可解釋狀態，而非完整病歷。</p>
+          <div class="evidence-row"><span class="badge decision">決策</span><span class="evidence-id">E-0052 · E-0076</span></div>
+        </article>
+        <article class="card decision-card filterable" data-priority="P0" data-status="Decision,Unknown" data-topic="decisions" data-gm="true">
+          <span class="priority p0">P0</span><div class="question">6. Discovery 能拿到甚麼？</div>
+          <p class="micro">真實匿名 case、隊列/異常資料、系統演示、夥伴和一線人員訪問決定研究能否從概念走向證據。</p>
+          <div class="evidence-row"><span class="badge unknown">未知</span><span class="evidence-id">需客戶提供訪問權限</span></div>
+        </article>
+      </div>
+
+      <details class="detail-learning filterable" data-priority="P1" data-status="Fact,Signal,Hypothesis,Unknown,Decision" data-topic="research">
+        <summary>如何讀這份研究：五種證據狀態</summary>
+        <div class="detail-body">
+          <p><span class="badge fact">事實</span> 可由法規、官方資料或公開服務事實支持；<span class="badge signal">訊號</span> 是方向性線索，不能獨立證明；<span class="badge hypothesis">假設</span> 是待驗證的綜合判斷；<span class="badge unknown">未知</span> 表示公開資料無法回答；<span class="badge decision">決策</span> 必須由 Prudential 業務負責人作出。</p>
+          <p>優先級表達討論順序：P0 首次 GM 討論必須掌握，P1 在 Discovery 範圍確認前掌握，P2 在 blueprint / implementation 前深入。</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="industry">
+      <div class="section-head">
+        <div class="section-num">01</div>
+        <div>
+          <div class="section-kicker">行業 101</div>
+          <h2>醫療保險不是一次交易，而是多條責任鏈並行</h2>
+          <p class="section-intro">客戶看到的是一次看病；系統背後同時發生身份、臨床、保障、服務、文件和支付判斷。行業難點往往不在單個組織內部，而在交界處。</p>
+        </div>
+      </div>
+
+      <div class="model-shell zoomable filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="industry" data-gm="true">
+        <button class="zoom-btn" type="button" aria-label="放大五類狀態圖">放大圖示</button>
+        <div class="model-center">
+          <h3>同一個醫療 case，五類狀態可能不同步</h3>
+          <p class="micro">一個統一的 “Pending” 會遮蔽真正原因、責任人和客戶下一步。</p>
+        </div>
+        <div class="state-grid">
+          <div class="state" style="--state-color:#4e714c"><strong>臨床 Clinical</strong><span>診斷、計劃、風險、覆診</span></div>
+          <div class="state" style="--state-color:#da291c"><strong>保障 Coverage</strong><span>資格、限制、審批、條件</span></div>
+          <div class="state" style="--state-color:#b17821"><strong>服務 Service</strong><span>預約、owner、handoff、SLA</span></div>
+          <div class="state" style="--state-color:#536872"><strong>文件 Document</strong><span>缺失、版本、來源、驗證</span></div>
+          <div class="state" style="--state-color:#6d150e"><strong>財務 Financial</strong><span>估算、自付、賬單、支付</span></div>
+        </div>
+        <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">E-0042 · E-0047 · H-0015</span></div>
+      </div>
+
+      <h3 style="margin:30px 0 12px">從需求到結算的保險服務鏈</h3>
+      <div class="pipeline filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="industry">
+        <div class="pipeline-step"><strong>發現需要</strong><small>症狀、篩查、轉診或醫生建議</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>理解保障</strong><small>資格、網絡、限制、預計自付</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>選擇與預約</strong><small>合適 provider、能力、地點與時間</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>預授權</strong><small>臨床資料與保單規則進入決定</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>服務交付</strong><small>計劃可能變化，承諾需要版本化</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>賬單與理賠</strong><small>核對 approved / delivered / billed</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>診後連續性</strong><small>藥物、覆診、康復、再進入</small></div>
+      </div>
+
+      <div class="grid three" style="margin-top:16px">
+        <article class="card filterable" data-priority="P0" data-status="Fact" data-topic="industry">
+          <span class="priority p0">P0</span><h3>香港是混合供給與融資體系</h3>
+          <p class="micro">公營與私營服務並存；保險、政府資助、自費與雇主福利共同影響患者選擇和支付路徑。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0014–E-0020</span></div>
+        </article>
+        <article class="card filterable" data-priority="P1" data-status="Fact" data-topic="industry">
+          <span class="priority p1">P1</span><h3>eHealth 是健康記錄共享基礎設施</h3>
+          <p class="micro">它支持獲授權的醫療機構與專業人員共享記錄；不等於保險服務 case、任務、SLA 或 financial commitment 層。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0027–E-0029</span></div>
+        </article>
+        <article class="card filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="industry">
+          <span class="priority p1">P1</span><h3>跨境需要逐條定義合同</h3>
+          <p class="micro">每條流都需要目的、主體、接收方、資料、保留、再傳輸、責任、異常與 clinical handoff。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="badge hypothesis">假設</span><span class="evidence-id">E-0025 · E-0036 · E-0060</span></div>
+        </article>
+      </div>
+
+      <details class="detail-learning filterable" data-priority="P1" data-status="Fact" data-topic="industry">
+        <summary>行業速查詞彙：會議前需要掌握的 16 個概念</summary>
+        <div class="detail-body">
+          <div class="grid two">
+            <div><strong>Eligibility</strong> 某時點是否具有保障資格；<br><strong>預授權</strong> 服務前對 coverage 條件的決定；<br><strong>Direct billing</strong> 機構與保險方結算，客戶可能仍有自付；<br><strong>LOG</strong> letter of guarantee，條件化付款承諾。</div>
+            <div><strong>Medical necessity</strong> 臨床合理性與保障條款的交點；<br><strong>Shortfall</strong> 最終可付與賬單之間差額；<br><strong>Network</strong> 合作機構集合，不自動代表整合成熟度；<br><strong>Panel</strong> 具有特定價格/流程安排的 provider 集合。</div>
+            <div><strong>Case</strong> 跨觸點的服務實例；<br><strong>Commitment</strong> requested–approved–delivered–billed–paid 的版本化記錄；<br><strong>Handoff</strong> 跨角色/機構轉移責任；<br><strong>已接受的交接</strong> 接收方明確確認已承擔下一步。</div>
+            <div><strong>SLA</strong> 服務時鐘與目標；<br><strong>Exception</strong> 阻止正常流轉的已分類偏差；<br><strong>Clinical owner</strong> 對診療決定負責的人；<br><strong>Service owner</strong> 對推進與協調負責、但不替代臨床判斷的人。</div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="prudential">
+      <div class="section-head">
+        <div class="section-num">02</div>
+        <div>
+          <div class="section-kicker">Prudential 現況</div>
+          <h2>起點不是零：已有服務資產，待驗證的是是否形成一體化能力</h2>
+          <p class="section-intro">公開資料顯示 Prudential 已覆蓋網絡搜索、預授權、直付、區域合作、agent/客戶渠道和 AI/OCR 試點。關鍵未知不是“有沒有功能”，而是 case、狀態、SLA、異常、資料和責任是否統一。</p>
+        </div>
+      </div>
+
+      <div class="grid four">
+        <article class="card accent-red filterable" data-priority="P0" data-status="Fact" data-topic="prudential" data-gm="true">
+          <h3>醫療網絡與直付</h3><p class="micro">公開服務頁描述 provider 搜索、H2P、預授權與醫療費用直付流程。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0005 · E-0042</span></div>
+        </article>
+        <article class="card accent-red filterable" data-priority="P1" data-status="Fact" data-topic="prudential">
+          <h3>跨境夥伴擴展</h3><p class="micro">已公布與大灣區、上海及腫瘤服務機構擴展合作和直付安排。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0045–E-0047</span></div>
+        </article>
+        <article class="card accent-red filterable" data-priority="P1" data-status="Fact" data-topic="prudential">
+          <h3>客戶、顧問與健康支持</h3><p class="micro">myPrudential、claims channels、PRUHealth Team 和 agent-enabled service 已有公開入口。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0041 · E-0049 · E-0052</span></div>
+        </article>
+        <article class="card accent-red filterable" data-priority="P1" data-status="Fact" data-topic="prudential">
+          <h3>AI 與文件自動化</h3><p class="micro">公開材料涵蓋 AI CoE、Cantonese voice AI、MedScreen+ 與歷史 H2P/claims automation。MedScreen+ 已公開用於醫療報告核保，但本原型是否對接仍標為待確認。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0050 · E-0051 · E-0053</span></div>
+        </article>
+      </div>
+
+      <div class="table-wrap filterable" style="margin-top:20px" data-priority="P0" data-status="Fact,Hypothesis,Unknown" data-topic="prudential" data-gm="true">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>公開可見</th><th>合理推斷</th><th>仍未知</th><th>Discovery 證據</th></tr></thead>
+            <tbody>
+              <tr><td class="wide">網絡、直付、H2P、客戶/agent 渠道和合作夥伴</td><td class="wide">Future Clinic 更像整合與標準化，而不是 greenfield 重做</td><td class="wide">是否已有統一 case ID、狀態、SLA、異常 taxonomy</td><td>系統演示 + 6–10 個匿名 case trace</td></tr>
+              <tr><td>跨境與腫瘤夥伴公告</td><td>轉診、跨境協調與診後連續性是高價值驗證區</td><td>合作是否包含 accepted handoff、clinical lead、版本化計劃與事件接口</td><td>合同/SOP + partner walkthrough</td></tr>
+              <tr><td>AI/OCR/voice initiatives, including MedScreen+</td><td>文件與服務營運是較安全的 AI 起點；MedScreen+ 可作為 underwriting-adjacent public capability signal</td><td>是否正在使用 MedScreen+、覆蓋哪些報告/檢查、與核心核保系統如何集成、人工復核與審計規則</td><td>AI governance workshop + MedScreen+ workflow confirmation + shadow evaluation</td></tr>
+              <tr><td>公開健康需求研究</td><td>用戶確定性可能比更多選擇更重要</td><td>Prudential 客戶分群、行為、重複聯繫和流失機制</td><td>客戶/照護者訪談 + contact reason data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="callout filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="prudential" data-gm="true">
+        <strong>GM 要點：</strong>我們的價值不是“幫 Prudential 想一個 App”，而是把既有資產變成可被客戶感知、被營運執行、被夥伴接受、被資料證明的端到端服務。
+      </div>
+    </section>
+
+    <section class="section" id="people">
+      <div class="section-head">
+        <div class="section-num">03</div>
+        <div>
+          <div class="section-kicker">角色與生態</div>
+          <h2>每個角色都只看到部分真相</h2>
+          <p class="section-intro">Future Clinic 的設計對象不是“用戶界面”，而是一組互相依賴、權限不同、責任不同的工作。醫生負責臨床，保險方負責 coverage，服務 owner 負責推進，平台負責可見性與控制。</p>
+        </div>
+      </div>
+
+      <div class="grid three">
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis" data-topic="people" data-gm="true">
+          <h3>客戶 / 照護者</h3><p class="micro">需要知道下一步、負責人、時間、覆蓋條件和預計自付；照護者需要可委託、可撤銷的權限。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">H-0013</span></div>
+        </article>
+        <article class="card filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="people" data-gm="true">
+          <h3>醫生 / Clinical lead</h3><p class="micro">完成 underwriting report / medical report 並保留 source clinical record 與診療責任；可要求額外檢查，且不應被 coverage workflow 或 AI 替代。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="badge hypothesis">假設</span></div>
+        </article>
+        <article class="card filterable" data-priority="P1" data-status="Hypothesis" data-topic="people">
+          <h3>醫院行政 / Insurance coordinator</h3><p class="micro">提交結構化資料、追蹤問題、更新計劃和核對承諾；是常被忽略的關鍵用戶。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span></div>
+        </article>
+        <article class="card filterable" data-priority="P1" data-status="Hypothesis" data-topic="people">
+          <h3>Agent / Channel</h3><p class="micro">幫助導航、解釋狀態、升級和陪伴；只需最小必要資訊，不需要完整病歷。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">E-0052 · E-0076</span></div>
+        </article>
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis,Unknown" data-topic="people" data-gm="true">
+          <h3>Prudential service owner</h3><p class="micro">對複雜 case 的推進、溝通和恢復負責；現有角色是否具備此職責仍未知。</p>
+          <div class="evidence-row"><span class="badge unknown">未知</span><span class="evidence-id">H-0017</span></div>
+        </article>
+        <article class="card filterable" data-priority="P1" data-status="Hypothesis" data-topic="people">
+          <h3>Claims / Pre-auth / Network / Risk</h3><p class="micro">分別擁有 coverage、支付、夥伴與控制權；必須共享狀態，却不能混淆決策權限。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span></div>
+        </article>
+      </div>
+
+      <h3 style="margin:30px 0 12px">責任分離：不讓“協同”變成“責任模糊”</h3>
+      <div class="table-wrap filterable" data-priority="P0" data-status="Hypothesis,Decision" data-topic="people" data-gm="true">
+        <div class="table-scroll"><table>
+          <thead><tr><th>責任域</th><th>建議 accountable role</th><th>平台支持</th><th>不能越界</th></tr></thead>
+          <tbody>
+            <tr><td>臨床決策</td><td>主診醫療機構 / 臨床負責人</td><td>引用來源、計劃版本、臨床 handoff</td><td>保險方或 AI 不作診斷/治療決定</td></tr>
+            <tr><td>核保報告</td><td>醫生 / 獲授權醫療評估人員</td><td>醫生完成報告、簽署、鎖定來源；系統只保留 provenance、版本和提交狀態</td><td>AI、agent 或 service owner 不完成或改寫醫生報告</td></tr>
+            <tr><td>額外檢查要求</td><td>視原因由醫生或獲授權核保人員提出</td><td>request reason、required test、requesting role、owner、due date、customer communication</td><td>不能把“缺 evidence”誤寫為“不完整醫生報告”或自動拒保</td></tr>
+            <tr><td>保障決策</td><td>獲授權保險決策負責人</td><td>資格、規則、證據、解釋、appeal</td><td>service owner 不自行改變保障</td></tr>
+            <tr><td>服務編排</td><td>具名服務負責人</td><td>case、task、clock、exception、communication</td><td>不替代臨床或 coverage authority</td></tr>
+            <tr><td>來源記錄</td><td>原始醫療機構 / 系統負責人</td><td>鏈接、交換、provenance、訪問控制</td><td>不復制出多個相互衝突的病歷真相</td></tr>
+            <tr><td>資料 / AI 控制</td><td>業務負責人 + 私隱 / 風險 / 臨床治理</td><td>purpose、consent、evaluation、audit、kill switch</td><td>模型供應商不成為事實或責任 owner</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="section" id="journey">
+      <div class="section-head">
+        <div class="section-num">04</div>
+        <div>
+          <div class="section-kicker">旅程與營運</div>
+          <h2>正常流程展示服務，異常流程暴露能力</h2>
+          <p class="section-intro">我們用七條旅程學習業務，再用一條本地日間手術 case 建首個 proof。關鍵不是把 happy path 畫漂亮，而是確保缺文件、計劃變化、超時和賬單差異都有 owner、時鐘、解釋和恢復。</p>
+        </div>
+      </div>
+
+      <div class="grid four">
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis" data-topic="journey" data-gm="true"><span class="priority p0">P0</span><h3>1. 找到 care 與 coverage</h3><p class="micro">從未分層目錄轉向 guided path 與 warm handoff。</p></article>
+        <article class="card filterable" data-priority="P1" data-status="Hypothesis" data-topic="journey"><span class="priority p1">P1</span><h3>2. 問診 / 醫療機構行政</h3><p class="micro">理解醫生與醫院行政如何真正工作和等待。</p></article>
+        <article class="card filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="journey" data-gm="true"><span class="priority p0">P0</span><h3>3. 預授權</h3><p class="micro">結構化 submission、條件、版本與解釋。</p></article>
+        <article class="card filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="journey" data-gm="true"><span class="priority p0">P0</span><h3>4. 直付 / 索償</h3><p class="micro">貫通 approved、delivered、billed 與 paid。</p></article>
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis" data-topic="journey" data-gm="true"><span class="priority p0">P0</span><h3>5. 異常</h3><p class="micro">分類、接受、owner、due time、解釋與 root cause。</p></article>
+        <article class="card filterable" data-priority="P1" data-status="Hypothesis" data-topic="journey"><span class="priority p1">P1</span><h3>6. 出院 / 跟進</h3><p class="micro">以 day-7 / 30 / 90 檢查連續性與 re-entry。</p></article>
+        <article class="card filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="journey"><span class="priority p1">P1</span><h3>7. 跨境腫瘤</h3><p class="micro">戰略 lighthouse：共享照護、clinical lead 與跨境 case contract。</p></article>
+      </div>
+
+      <h3 style="margin:30px 0 12px">首個 proof：本地日間手術 + exception overlay</h3>
+      <div class="lane-wrap zoomable filterable" data-priority="P0" data-status="Hypothesis,Decision" data-topic="journey" data-gm="true">
+        <button class="zoom-btn" type="button" aria-label="放大日間手術泳道圖">放大泳道</button>
+        <div class="lane-grid">
+          <div class="head">Role / step</div><div class="head">1 找到路徑</div><div class="head">2 預約/評估</div><div class="head">3 預授權</div><div class="head">4 服務交付</div><div class="head">5 賬單/支付</div><div class="head">6 診後關閉</div>
+          <div class="role">客戶 / Agent</div><div class="cell">表達需要；理解下一步與網絡選擇</div><div class="cell">確認時間、地點、預計資料</div><div class="cell risk">看見條件、時鐘、owner 與預計自付</div><div class="cell">計劃變化時得到解釋</div><div class="cell risk">看見差異及誰在處理</div><div class="cell end">確認覆診、藥物與最終關閉</div>
+          <div class="role">Provider</div><div class="cell">接收 warm handoff</div><div class="cell">完成評估與結構化計劃</div><div class="cell risk">提交完整 pack；回應 query</div><div class="cell">記錄 delivered 與 material change</div><div class="cell risk">提交 itemised invoice</div><div class="cell end">發出 discharge / follow-up plan</div>
+          <div class="role">Prudential</div><div class="cell">資格與路徑規則</div><div class="cell">服務協調與 network support</div><div class="cell risk">coverage decision + explanation</div><div class="cell">接收變更並更新 commitment</div><div class="cell risk">reconcile / shortfall / dispute</div><div class="cell end">多維 closure 與 re-entry</div>
+          <div class="role">Platform</div><div class="cell platform">建立 cross-channel case ID</div><div class="cell platform">accepted handoff + task</div><div class="cell platform">五類狀態 + version</div><div class="cell platform">exception owner + clock</div><div class="cell platform">variance flag + audit</div><div class="cell platform end">outcome + root-cause data</div>
+        </div>
+      </div>
+
+      <h3 style="margin:30px 0 12px">核心業務對象：shared commitment record</h3>
+      <div class="pipeline commitment filterable" data-priority="P0" data-status="Hypothesis" data-topic="journey" data-gm="true">
+        <div class="pipeline-step"><strong>Requested</strong><small>provider 提議的服務、依據與預計費用</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Approved</strong><small>coverage 條件、限額、有效期與解釋</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Delivered</strong><small>實際服務、日期、計劃變化與來源</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Billed</strong><small>itemised invoice 與承諾差異</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Paid</strong><small>保險支付、客戶自付、拒絕與結案</small></div>
+      </div>
+
+      <div class="grid three" style="margin-top:18px">
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis" data-topic="journey" data-gm="true"><h3>異常駕駛艙</h3><p class="micro">type、severity、owner、decision owner、due time、customer explanation、dependency、recovery 與 root cause。</p><div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">E-0061 · E-0075</span></div></article>
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis" data-topic="journey" data-gm="true"><h3>已接受的交接</h3><p class="micro">發送不等於完成；必須 accept / reject / timeout，並有 fallback 與升級。</p><div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">E-0047 · E-0066</span></div></article>
+        <article class="card filterable" data-priority="P1" data-status="Hypothesis" data-topic="journey"><h3>多維度關閉</h3><p class="micro">clinical、service、document、financial 和 customer-understood 分別關閉；任何一項未完成都可觸發 re-entry。</p><div class="evidence-row"><span class="badge hypothesis">假設</span></div></article>
+      </div>
+    </section>
+
+    <section class="section" id="systems">
+      <div class="section-head">
+        <div class="section-num">05</div>
+        <div>
+          <div class="section-kicker">系統與資料</div>
+          <h2>保留系統真相，新增跨系統承諾與協調</h2>
+          <p class="section-intro">目標不是建一個“万能系統”。Provider、policy、claims 和 finance 繼續作為各自 source of truth；新增的是可分離的 case / commitment / exception 層和受控的角色視圖。</p>
+        </div>
+      </div>
+
+      <div class="layer-stack filterable" data-priority="P0" data-status="Hypothesis,Unknown" data-topic="systems" data-gm="true">
+        <div class="layer" style="--layer-color:#da291c"><div class="layer-title">Role experiences</div><div class="layer-desc">客戶、caregiver、agent、provider admin、clinical、operations、partner 的 permissioned views；渠道可以不同，狀態詞典必須一致。</div></div>
+        <div class="layer" style="--layer-color:#b17821"><div class="layer-title">服務編排</div><div class="layer-desc">Case ID、tier、task、owner、SLA、accepted handoff、exception、commitment、communication、closure 與 re-entry。</div></div>
+        <div class="layer" style="--layer-color:#4e714c"><div class="layer-title">Insurance / provider services</div><div class="layer-desc">Eligibility、network、appointment、pre-auth、document pack、invoice、claim、payment 與 reconciliation。</div></div>
+        <div class="layer" style="--layer-color:#536872"><div class="layer-title">Integration & event layer</div><div class="layer-desc">API、portal、secure file、message/event adapters；按 partner maturity 選擇，不假設所有機構實時 API。</div></div>
+        <div class="layer" style="--layer-color:#6d150e"><div class="layer-title">Systems of record</div><div class="layer-desc">Provider EMR / clinical record、policy administration、claims、network/provider master、finance/payment、identity/consent 與 audit。</div></div>
+      </div>
+
+      <div class="grid two" style="margin-top:18px">
+        <article class="card filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="systems" data-gm="true">
+          <h3>平台應該擁有</h3>
+          <ul class="micro"><li>case identity 與角色/權限；</li><li>parallel states 與狀態詞典；</li><li>task、handoff、clock 與 exception；</li><li>shared commitment 及版本；</li><li>communication、audit、metrics 與 root cause。</li></ul>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">E-0054 · E-0055</span></div>
+        </article>
+        <article class="card recessed filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="systems" data-gm="true">
+          <h3>平台不應復制取代</h3>
+          <ul class="micro"><li>provider source clinical record；</li><li>保單條款與 policy system 權威；</li><li>claims adjudication / finance ledger；</li><li>clinical or coverage decision authority；</li><li>未經目的、同意和最小化的資料。</li></ul>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0027–E-0029</span></div>
+        </article>
+      </div>
+
+      <details class="detail-learning filterable" data-priority="P1" data-status="Hypothesis,Unknown" data-topic="systems">
+        <summary>需要驗證的 canonical objects 與 events</summary>
+        <div class="detail-body">
+          <div class="table-wrap"><div class="table-scroll"><table>
+            <thead><tr><th>Object</th><th>關鍵字段</th><th>關鍵事件</th><th>待驗證 owner</th></tr></thead>
+            <tbody>
+              <tr><td>Person / Party</td><td>identity、role、delegation、contact</td><td>matched、delegated、revoked</td><td>Identity / customer master</td></tr>
+              <tr><td>Policy / Eligibility</td><td>product、benefit、network、effective time</td><td>checked、changed、expired</td><td>Policy admin</td></tr>
+              <tr><td>Case</td><td>journey、tier、owner、states、next action</td><td>opened、tiered、reassigned、closed、reopened</td><td>Future orchestration owner</td></tr>
+              <tr><td>Commitment</td><td>requested/approved/delivered/billed/paid、version、condition</td><td>submitted、decided、varied、reconciled</td><td>Cross-functional</td></tr>
+              <tr><td>Task / Handoff</td><td>sender、receiver、dependency、clock、status</td><td>sent、accepted、rejected、timed out</td><td>Service owner / partner</td></tr>
+              <tr><td>Doctor-completed underwriting report</td><td>doctor、signature、source、version、locked status、submitted time</td><td>completed、signed、submitted、superseded by authorised correction</td><td>醫生 / 獲授權醫療評估人員</td></tr>
+              <tr><td>額外檢查要求</td><td>requester、reason、test type、due date、recipient、status</td><td>requested by doctor、requested by underwriter、fulfilled、cancelled、expired</td><td>Doctor or Underwriting, by request reason</td></tr>
+              <tr><td>Document / 證據</td><td>type、source、version、purpose、provenance</td><td>received、validated、superseded、deleted</td><td>Originating source</td></tr>
+              <tr><td>Exception</td><td>type、severity、owner、root cause、explanation</td><td>detected、accepted、escalated、resolved</td><td>Exception owner</td></tr>
+            </tbody>
+          </table></div></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="ai">
+      <div class="section-head">
+        <div class="section-num">06</div>
+        <div>
+          <div class="section-kicker">AI & Governance</div>
+          <h2>先讓工作可控，再讓 AI 加速</h2>
+          <p class="section-intro">AI 最有價值的起點是減少文件和服務營運摩擦，而不是替代臨床或保障判斷。沒有可靠 case state、權限、workflow、source quality 與 measure，AI 會更快傳播錯誤。</p>
+        </div>
+      </div>
+
+      <div class="grid three">
+        <article class="card accent-sage filterable" data-priority="P0" data-status="Hypothesis" data-topic="ai" data-gm="true">
+          <span class="priority p0">P0</span><h3>Document assist</h3>
+          <p class="micro">分類、OCR/extraction、provenance、額外檢查 request readiness 與人工確認；醫生報告完成狀態與核保補检需求必須分開。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">AI-01 · AI-02 · AI-03</span></div>
+        </article>
+        <article class="card accent-sage filterable" data-priority="P0" data-status="Hypothesis" data-topic="ai" data-gm="true">
+          <span class="priority p0">P0</span><h3>Exception assist</h3>
+          <p class="micro">發現異常、建議 taxonomy/priority、聚合依賴和生成客戶解釋草稿；human owner 接受並負責。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">AI-06</span></div>
+        </article>
+        <article class="card accent-gold filterable" data-priority="P1" data-status="Hypothesis" data-topic="ai">
+          <span class="priority p1">P1</span><h3>Grounded summary / agent assist</h3>
+          <p class="micro">按角色生成帶來源的 case summary、next action 和 approved knowledge；最小化臨床資訊。</p>
+          <div class="evidence-row"><span class="badge hypothesis">假設</span><span class="evidence-id">AI-04 · AI-05</span></div>
+        </article>
+        <article class="card filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="ai">
+          <span class="priority p1">P1</span><h3>Cantonese voice / VOC</h3>
+          <p class="micro">通話轉寫、摘要、contact reason 與 root-cause insight；需通知、保留策略、語言評估和人工糾正。</p>
+          <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">E-0051 · E-0083</span></div>
+        </article>
+        <article class="card recessed filterable" data-priority="P2" data-status="Decision,Hypothesis" data-topic="ai">
+          <span class="priority p2">P2</span><h3>Clinical prediction</h3>
+          <p class="micro">在責任、證據、監測和干預機制未明確前，不進入首個 proof。</p>
+          <div class="evidence-row"><span class="badge decision">Deferred</span></div>
+        </article>
+        <article class="card recessed filterable" data-priority="P2" data-status="Decision,Hypothesis" data-topic="ai">
+          <span class="priority p2">P2</span><h3>Autonomous coverage decision</h3>
+          <p class="micro">高影響、可申訴與公平性要求高；當前建議禁止自主拒絕或改變保障。</p>
+          <div class="evidence-row"><span class="badge decision">Red line</span></div>
+        </article>
+      </div>
+
+      <h3 style="margin:30px 0 12px">每個 AI use case 必須通過的控制鏈</h3>
+      <div class="pipeline filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="ai" data-gm="true">
+        <div class="pipeline-step"><strong>Purpose</strong><small>明確幫助誰、改善甚麼工作</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Minimum data</strong><small>權限、同意、來源與保留</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Evaluation</strong><small>準確、遺漏、群體、語言、成本</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Human boundary</strong><small>誰驗證、誰 override、誰負責</small></div><div class="pipeline-arrow">→</div>
+        <div class="pipeline-step"><strong>Runtime control</strong><small>日志、監測、申訴、incident、kill switch</small></div>
+      </div>
+      <div class="evidence-row"><span class="badge fact">事實</span><span class="evidence-id">PCPD AI Model Personal Data Protection Framework · E-0056</span></div>
+
+      <div class="table-wrap filterable" style="margin-top:20px" data-priority="P0" data-status="Fact,Hypothesis,Decision" data-topic="ai" data-gm="true">
+        <div class="table-scroll"><table>
+          <thead><tr><th>Roberto 澄清</th><th>原型修改</th><th>控制含義</th><th>繁中說法</th></tr></thead>
+          <tbody>
+            <tr><td>核保報告始終由醫生完成。</td><td>醫生端標示報告已由醫生完成並簽署；核保端把它作為來源證據使用。</td><td>AI 只可在醫生批准前輔助草擬或摘要，不能完成或修改已簽署報告。</td><td>核保報告由醫生完成及簽署。</td></tr>
+            <tr><td>額外檢查可由醫生或核保人員提出。</td><td>異常狀態改為「已要求額外檢查」，並顯示提出者、原因、負責人和到期時間。</td><td>不可把缺少證據等同於醫療報告失敗或不完整；不得自動拒保。</td><td>額外檢查可由醫生或核保人員提出。</td></tr>
+            <tr><td>假設：PHKL 可能正在使用 RGA MedScreen+。</td><td>將 MedScreen+ 標記為公開確認的能力訊號，並列為 PHKL 需確認的整合/使用項。</td><td>在系統範圍和控制被驗證前，只把它作為核保相鄰能力訊號。</td><td>MedScreen+ 為公開能力訊號，整合假設需確認。</td></tr>
+            <tr><td>原型必須提供英文及繁體中文。</td><td>面向客戶的原型文案與關鍵狀態需提供英文 + 繁中；簡中只作內部學習支持。</td><td>客戶交付前，將未翻譯字串視為 release issue 跟蹤。</td><td>原型需提供英文及繁體中文。</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="section" id="benchmarks">
+      <div class="section-head">
+        <div class="section-num">07</div>
+        <div>
+          <div class="section-kicker">Benchmarks</div>
+          <h2>借機制，不抄表面</h2>
+          <p class="section-intro">我們分析了 15 個醫療/保險案例與 14 個跨行業案例。可遷移的不是界面，而是責任機制：provider-initiated submission、accepted handoff、exception cockpit、stable owner、versioned commitment 和 permissioned proactive recovery。</p>
+        </div>
+      </div>
+
+      <div class="table-wrap filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="benchmarks">
+        <div class="table-scroll"><table>
+          <thead><tr><th>醫療/保險案例</th><th>機制</th><th>對 Prudential 的啟發</th><th>邊界</th></tr></thead>
+          <tbody>
+            <tr><td>Prudential H2P / Direct Billing</td><td>provider 與 insurer 之間的預授權/直付通道</td><td>從既有資產出發，追蹤完整 case 與異常</td><td>公開頁不證明內部 SLA/整合質素</td></tr>
+            <tr><td>AIA HK cashless / pre-approval</td><td>服務前 approval 與客戶/provider route</td><td>比較條件、解釋、變更與 recovery</td><td>產品條款和網絡不可直接照搬</td></tr>
+            <tr><td>Great Eastern SG GMCC</td><td>provider-submitted PAC 與 settlement</td><td>讓 provider admin 成為一等用戶</td><td>監管與融資环境不同</td></tr>
+            <tr><td>Singapore ISP comparison</td><td>標準化 panel/pre-auth 可比指標</td><td>把 network quality 變成可觀察能力</td><td>香港不能直接復刻政府比較機制</td></tr>
+            <tr><td>GBA oncology shared care</td><td>跨境轉診與分階段照護</td><td>需要 clinical lead、plan version 與 cross-border contract</td><td>臨床責任必須由 provider 承擔</td></tr>
+            <tr><td>Ping An Health</td><td>doctor network + digital operations + AI</td><td>平台與服務營運共同設計</td><td>規模、牌照與商業模式差異大</td></tr>
+            <tr><td>Bupa Blua / Discovery / Optum</td><td>連接式照護、network adoption、home care</td><td>以 continuity 與 outcome 設計層級服務</td><td>不能用 vendor/company claim 替代獨立結果</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="grid four" style="margin-top:18px">
+        <article class="card filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="benchmarks" data-gm="true"><h3>DHL / Maersk</h3><p class="micro">異常 cockpit、threshold、可見性和響應。遷移為 case exception；不能讓貨運式優化覆蓋臨床風險。</p><span class="evidence-id">E-0078 · E-0079</span></article>
+        <article class="card filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="benchmarks" data-gm="true"><h3>Delta / United</h3><p class="micro">中斷時主動溝通、連接保護與 recovery options。遷移為預約/轉診/授權失敗恢復。</p><span class="evidence-id">E-0074 · E-0075</span></article>
+        <article class="card filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="benchmarks"><h3>Morgan Stanley / BofA</h3><p class="micro">受控 advisor assist、contextual handoff 與 proactive insight。遷移到 agent/service owner 支持。</p><span class="evidence-id">E-0076 · E-0077</span></article>
+        <article class="card filterable" data-priority="P0" data-status="Fact,Hypothesis" data-topic="benchmarks" data-gm="true"><h3>T-Mobile Team of Experts</h3><p class="micro">穩定服務團隊與上下文保留。遷移為複雜 case non-clinical owner；不轉移 clinical accountability。</p><span class="evidence-id">E-0081</span></article>
+        <article class="card filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="benchmarks"><h3>CCC / Tractable</h3><p class="micro">多方理賠工作流與自動化 triage。適合文件/異常 assist，不適合自主 coverage refusal。</p><span class="evidence-id">E-0070 · E-0071</span></article>
+        <article class="card filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="benchmarks"><h3>NTT DATA / SURA</h3><p class="micro">GenAI reimbursement automation 的可驗證流程敘事；需補充獨立結果和 healthcare safety controls。</p><span class="evidence-id">E-0082</span></article>
+        <article class="card filterable" data-priority="P1" data-status="Fact,Hypothesis" data-topic="benchmarks"><h3>NTT DATA / Japan Post Bank</h3><p class="micro">voice mining、agent assist 與 VOC loop；適合 Cantonese service research。</p><span class="evidence-id">E-0083</span></article>
+        <article class="card recessed filterable" data-priority="P2" data-status="Decision" data-topic="benchmarks"><h3>遷移安全閘門</h3><p class="micro">Clinical accountability、health-data sensitivity、consent 與 explainability 四項不過關，不遷移。</p><span class="badge decision">閘門</span></article>
+      </div>
+
+      <details class="detail-learning filterable" data-priority="P2" data-status="Fact,Hypothesis" data-topic="benchmarks">
+        <summary>案例研究的下一步：兩份 Kimi 執行 brief</summary>
+        <div class="detail-body">
+          <p>已經生成醫療行業與跨行業兩份結構化 brief。每份要求補充至少 24 個目標案例，遵守來源層級、標準字段、結果證據、可遷移性與 healthcare safety filters，並明確禁止用營銷摘要替代事實。</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="research">
+      <div class="section-head">
+        <div class="section-num">08</div>
+        <div>
+          <div class="section-kicker">詳細研究計劃</div>
+          <h2>先展開學習，再用真實 case 收紧</h2>
+          <p class="section-intro">下一輪不從界面開始，而是同時研究戰略價值、客戶/照護者、agent、provider、operations/claims、partner、systems/data 和 AI governance；每天更新證據與假設，最後把範圍收敛為可驗證 proof。</p>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:12px">7 周 Discovery + 可選 proof</h3>
+      <div class="timeline filterable" data-priority="P0" data-status="Decision,Hypothesis" data-topic="research" data-gm="true">
+        <div class="week"><strong>W0 · 啟動準備</strong><span>訪問、隱私、招募、case 與資料請求</span></div>
+        <div class="week"><strong>W1 · G1 邊界</strong><span>Sponsor/value interviews；能力與系統演示</span></div>
+        <div class="week"><strong>W2 · 現況</strong><span>客戶、agent、provider、ops；首批 case trace</span></div>
+        <div class="week"><strong>W3 · 失敗機制 proof</strong><span>異常 Pareto、基線、partner maturity</span></div>
+        <div class="week"><strong>W4 · G3 機會</strong><span>Service blueprint、概念變體、能力排序</span></div>
+        <div class="week"><strong>W5 · 可行性</strong><span>架構、資料、AI、privacy、clinical controls</span></div>
+        <div class="week"><strong>W6 · G4 Proof 計劃</strong><span>概念測試、價值 sizing、MVP/lighthouse</span></div>
+        <div class="week"><strong>W7–10 · 可選</strong><span>Prototype/pilot、AI shadow、partner dry-run</span></div>
+      </div>
+
+      <div class="grid two" style="margin-top:18px">
+        <article class="card filterable" data-priority="P0" data-status="Decision" data-topic="research" data-gm="true">
+          <h3>研究样本</h3>
+          <ul class="micro">
+            <li>8–12 客戶/照護者；6–8 agents；</li>
+            <li>4–6 provider admins + 4–6 clinicians/nurses；</li>
+            <li>10–14 Prudential stakeholders；4–6 partners；</li>
+            <li>6–10 匿名 case：routine、missing docs、changed plan、shortfall、follow-up、cross-border oncology。</li>
+          </ul>
+        </article>
+        <article class="card filterable" data-priority="P0" data-status="Decision,Unknown" data-topic="research" data-gm="true">
+          <h3>P0 客戶輸入</h3>
+          <ul class="micro">
+            <li>組織/decision authority 與 current journey；</li>
+            <li>匿名 case pack、時間戳、outcome、queue/exception/contact reason；</li>
+            <li>表單、消息、partner SLA/SOP；系統演示和 access matrix；</li>
+            <li>volume、TAT percentile、touch、complaint、shortfall、direct-billing data；</li>
+            <li>consent/privacy/cross-border 與 AI/model inventory。</li>
+          </ul>
+        </article>
+      </div>
+
+      <h3 style="margin:30px 0 12px">八條並行研究流</h3>
+      <div class="table-wrap filterable" data-priority="P1" data-status="Hypothesis,Decision" data-topic="research">
+        <div class="table-scroll"><table>
+          <thead><tr><th>研究流</th><th>核心問題</th><th>方法</th><th>輸出</th></tr></thead>
+          <tbody>
+            <tr><td>Strategy & economics</td><td>為甚麼現在、價值屬於誰？</td><td>Sponsor interview、value tree、baseline review</td><td>Boundary、value hierarchy、business-case hypotheses</td></tr>
+            <tr><td>Customer / caregiver</td><td>脆弱時刻需要何種確定性？</td><td>Case reconstruction、interview、concept ranking</td><td>Needs、segments、journey evidence、adoption barriers</td></tr>
+            <tr><td>Agent / channel</td><td>Agent 應做甚麼、能看甚麼？</td><td>Task walkthrough、permission co-design</td><td>Role、minimum view、escalation、training</td></tr>
+            <tr><td>Provider / clinical</td><td>摩擦由誰承擔、臨床邊界在哪？</td><td>Contextual workflow、artefact review</td><td>Provider blueprint、data pack、responsibility</td></tr>
+            <tr><td>營運 / 理賠</td><td>等待、返工、異常在哪裡？</td><td>Case trace、queue analysis、shadowing</td><td>State/exception map、RACI、SLA、baseline</td></tr>
+            <tr><td>Partner / network</td><td>夥伴能執行甚麼層級？</td><td>Contract/SLA review、maturity assessment</td><td>Partner tiers、conformance、remediation</td></tr>
+            <tr><td>Systems / data</td><td>已有 case、ID、consent、integration？</td><td>System demo、architecture、lineage</td><td>Current/target boundary、objects/events</td></tr>
+            <tr><td>AI / governance</td><td>哪些 AI 可安全驗證？</td><td>Readiness、sample evaluation、risk workshop</td><td>Shadow trial、evaluation、controls、red lines</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <h3 style="margin:30px 0 12px">我們的能力不是單點 UX，而是一條證據到落地的鏈</h3>
+      <div class="capability-band filterable" data-priority="P0" data-status="Fact,Decision" data-topic="research" data-gm="true">
+        <div><strong>1. 行業與證據</strong><span>事實、訊號、假設、未知與反證</span></div>
+        <div><strong>2. 以人為本的服務</strong><span>客戶、醫生、agent 與弱勢時刻</span></div>
+        <div><strong>3. 營運模式</strong><span>責任、RACI、handoff、exception、partner tier</span></div>
+        <div><strong>4. 技術 / 資料 / AI</strong><span>系統邊界、對象、互操作、治理與 bounded AI</span></div>
+        <div><strong>5. 價值與交付</strong><span>基線、proof、實驗、roadmap 與 adoption</span></div>
+      </div>
+
+      <div class="grid four" style="margin-top:22px">
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis" data-topic="research" data-gm="true"><h3>H0 證據與對齊</h3><p class="micro">確認邊界與價值尺度；不選平台。</p></article>
+        <article class="card filterable" data-priority="P0" data-status="Hypothesis" data-topic="research" data-gm="true"><h3>H1 旅程 proof</h3><p class="micro">本地日間手術 + exception；證明基礎編排。</p></article>
+        <article class="card filterable" data-priority="P1" data-status="Hypothesis" data-topic="research"><h3>H2 網絡規模化</h3><p class="micro">Partner tiers、integration、scorecard、post-care。</p></article>
+        <article class="card filterable" data-priority="P2" data-status="Hypothesis" data-topic="research"><h3>H3 複雜共享照護</h3><p class="micro">跨境腫瘤、clinical lead、plan/record continuity。</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="gm">
+      <div class="section-head">
+        <div class="section-num">09</div>
+        <div>
+          <div class="section-kicker">GM 匯報版</div>
+          <h2>把系統想法轉化為可驗證的商業命題</h2>
+          <p class="section-intro">GM 討論應確認業務邊界、首要價值尺度、首個 proof、問責 owner 及 Discovery 訪問權限，而不是逐頁審閱完整行業學習包。</p>
+          <p class="presenter-note">講解提示：GM 視圖聚焦客戶匯報與決策；學習視圖保留較完整的行業解釋和證據。</p>
+        </div>
+      </div>
+
+      <div class="gm-only callout">
+        <strong>GM 視圖已啟用。</strong> 預設展示 P0。可開啟 P1/P2 查看支持細節，或回到學習視圖查看完整研究地圖。
+      </div>
+
+      <div class="grid three">
+        <article class="card hero-card elevated filterable" data-priority="P0" data-status="Hypothesis" data-topic="decisions" data-gm="true">
+          <span class="priority p0">01</span><h3>我們的判斷</h3><p class="lead">機會在於醫療服務編排與承諾管理，而不是另一個 App 或 EMR。</p>
+          <p class="presenter-note">強調這是待驗證的業務邊界，不是已批准 target architecture。</p>
+          <div class="evidence-row"><span class="evidence-id">F-01 · F-02 · F-09</span></div>
+        </article>
+        <article class="card hero-card elevated filterable" data-priority="P0" data-status="Hypothesis,Decision" data-topic="decisions" data-gm="true">
+          <span class="priority p0">02</span><h3>建議的首個 proof</h3><p class="lead">以本地日間手術為首個場景，疊加缺文件、治療計劃變更和賬單差異。</p>
+          <p class="presenter-note">日間手術的頻率與資料可得性仍需 Prudential 驗證。</p>
+          <div class="evidence-row"><span class="evidence-id">F-06 · F-12</span></div>
+        </article>
+        <article class="card hero-card elevated filterable" data-priority="P0" data-status="Hypothesis" data-topic="decisions" data-gm="true">
+          <span class="priority p0">03</span><h3>長期燈塔場景</h3><p class="lead">以跨境腫瘤共享照護定義完整的未來責任與控制模型。</p>
+          <p class="presenter-note">用作 north star，而不是首個技術 MVP 的承諾。</p>
+          <div class="evidence-row"><span class="evidence-id">F-08 · F-16</span></div>
+        </article>
+      </div>
+
+      <div class="grid two" style="margin-top:18px">
+        <article class="card filterable" data-priority="P0" data-status="Decision" data-topic="decisions" data-gm="true">
+          <h3>今天希望確認的決策</h3>
+          <ol class="micro"><li>邊界：編排 / 自有臨床服務 / 混合模式；</li><li>價值尺度的優先順序；</li><li>首個 proof 與長期燈塔場景；</li><li>端到端服務承諾的問責 owner；</li><li>Agent / 照護者權限邊界；</li><li>案例、資料、系統、夥伴與參與者訪問權限。</li></ol>
+          <p class="presenter-note">目標是明確決定與 owner，不以“繼續看看”結束。</p>
+        </article>
+        <article class="card recessed filterable" data-priority="P0" data-status="Decision" data-topic="decisions" data-gm="true">
+          <h3>今天不需要決定</h3>
+          <ul class="micro"><li>CMS / case 平台供應商；</li><li>FHIR profile 或自建 / 採購；</li><li>完整目標架構；</li><li>AI 模型或供應商；</li><li>對外命名、UI 或全面推出；</li><li>任何自主臨床或保障決策 AI。</li></ul>
+          <p class="presenter-note">技術選項在 boundary、object、partner maturity 與 proof 之後進入。</p>
+        </article>
+      </div>
+
+      <div class="callout filterable" data-priority="P0" data-status="Decision" data-topic="decisions" data-gm="true">
+        <strong>建議下一步：</strong> 啟動 7 週證據導向 Discovery。第 1 週後確認邊界 / 價值 gate；第 3 週前暴露真實失敗機制；第 6 週選定首個 proof 與投資 gate。若真實案例推翻當前判斷，應調整命題。
+      </div>
+
+      <details class="filterable" data-priority="P1" data-status="Hypothesis,Decision" data-topic="decisions" data-gm="true">
+        <summary>GM 可能問題、建議回應與講者提醒</summary>
+        <div class="detail-body">
+          <div class="table-wrap"><div class="table-scroll"><table>
+            <thead><tr><th>可能問題</th><th>建議回應</th><th>講者提醒</th></tr></thead>
+            <tbody>
+              <tr><td>這和 myPrudential / H2P 有甚麼不同？</td><td>那些資產是起點。我們會驗證它們是否能透過共享 case、承諾、異常和 ownership，運作成一個服務。</td><td>內部驗證前，不要斷言現有系統是割裂的。</td></tr>
+              <tr><td>為甚麼現在不直接選診所平台？</td><td>在邊界、責任、核心對象、夥伴成熟度和首個 proof 未明確前，平台比較不可靠。</td><td>保持 Discovery 有時間盒，並由決策牽引。</td></tr>
+              <tr><td>AI 在哪裡？</td><td>從文件、異常和有來源摘要的 shadow mode 輔助開始。AI 加速受控工作，但不替代高影響決策。</td><td>不要承諾自主臨床或保障決策。</td></tr>
+              <tr><td>我們是否假設使用 MedScreen+？</td><td>可以把它作為 PHKL/RGA 已公開的核保醫療報告能力訊號；但不能作為未驗證的系統整合聲稱。需確認是否使用、位於哪個流程節點，以及有哪些人工復核 / 審計控制。</td><td>不要暗示 MedScreen+ 完成醫生報告或作出最終核保決定。</td></tr>
+              <tr><td>甚麼是完整證據 case？</td><td>醫生完成並簽署後，該醫生報告即為完成。另一個獨立場景是醫生或核保人員要求額外檢查，這會形成一個證據要求異常。</td><td>不要僅因後續要求額外檢查，就把醫生已完成報告標為不完整。</td></tr>
+              <tr><td>原型應使用甚麼語言？</td><td>面向客戶的原型畫面與關鍵狀態需提供英文及繁體中文。</td><td>簡中只可作內部學習筆記，不應作為客戶原型基準。</td></tr>
+              <tr><td>為甚麼先做日間手術，而不是腫瘤？</td><td>日間手術可在複雜度受控下驗證共通編排機制；腫瘤仍是完整跨境控制的北極星場景。</td><td>頻率與資料可得性仍需客戶證據驗證。</td></tr>
+              <tr><td>如何證明價值？</td><td>以客戶確定性、端到端用時 / 接觸次數、異常、夥伴表現、支付、連續性和安全 / override 作基線。</td><td>不要只依賴 adoption 或平均 TAT。</td></tr>
+            </tbody>
+          </table></div></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-head">
+        <div class="section-num">S</div>
+        <div>
+          <div class="section-kicker">來源</div>
+          <h2>關鍵來源與證據邊界</h2>
+          <p class="section-intro">完整來源登記、證據記錄和 claim/source 關係保存在研究工作區。以下為客戶端最常用的官方與第一方入口。</p>
+        </div>
+      </div>
+
+      <div class="card recessed">
+        <ol class="source-list">
+          <li><code>SRC-P01</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/about-us/our-company">About Prudential Hong Kong</a></li>
+          <li><code>SRC-P02</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/about-us/newsroom/patient-first-healthcare-network/">Patient-first healthcare network</a></li>
+          <li><code>SRC-P05</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/claims-and-services/claims/medical-expenses-direct-billing-service/">Medical Expenses Direct Billing</a></li>
+          <li><code>SRC-P07</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/claims-and-services/health-services/pruhealth-team/">PRUHealth Team</a></li>
+          <li><code>SRC-P08</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/claims-and-services/health-services/find-a-healthcare-provider/">Find a healthcare provider</a></li>
+          <li><code>SRC-P11</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/about-us/newsroom/prudential-deepens-cooperation-with-fosun-health/">Fosun Health / GBA partnership</a></li>
+          <li><code>SRC-P13</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/about-us/newsroom/prudential-and-union-hospital-deepen-strategic-partnership/">Oncology network partnership</a></li>
+          <li><code>SRC-P14</code> <a target="_blank" rel="noopener" href="https://www.prudentialplc.com/content/dam/prudential-plc/investor/results-and-reports/lastest-annual-report/prudential-plc-ar-2025.pdf.coredownload.inline.pdf">Prudential plc Annual Report 2025</a></li>
+          <li><code>SRC-P23</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/about-us/newsroom/cyberport-and-prudential-launch-cantonese-voice-ai/">Cantonese Voice AI Challenge</a></li>
+          <li><code>SRC-P24</code> <a target="_blank" rel="noopener" href="https://www.prudential.com.hk/en/about-us/newsroom/prudential-launches-medscreen/">Prudential / RGA MedScreen+ launch</a></li>
+          <li><code>SRC-HK01</code> <a target="_blank" rel="noopener" href="https://www.healthbureau.gov.hk/en/our_work/health/sth3.html">Hong Kong healthcare system</a></li>
+          <li><code>SRC-HK09</code> <a target="_blank" rel="noopener" href="https://www.healthbureau.gov.hk/download/press_and_publications/otherinfo/221200_primary_healthcare/e_primary_healthcare_blueprint.pdf">Primary Healthcare Blueprint</a></li>
+          <li><code>SRC-HK12</code> <a target="_blank" rel="noopener" href="https://www.ehealth.gov.hk/en/whats-ehealth/index.html">What’s eHealth</a></li>
+          <li><code>SRC-DP02</code> <a target="_blank" rel="noopener" href="https://www.pcpd.org.hk/english/news_events/media_statements/press_20220512.html">Cross-border model clauses</a></li>
+          <li><code>SRC-DP05</code> <a target="_blank" rel="noopener" href="https://www.pcpd.org.hk/english/news_events/media_statements/press_20240611.html">AI Model Personal Data Protection Framework</a></li>
+          <li><code>SRC-STD01</code> <a target="_blank" rel="noopener" href="https://fhir.hl7.org/fhir/overview.html">HL7 FHIR Overview</a></li>
+          <li><code>SRC-X09</code> <a target="_blank" rel="noopener" href="https://group.dhl.com/en/media-relations/press-releases/2024/for-increased-usability-and-efficiency-mydhli-meets-genai.html">DHL myDHLi visibility / GenAI</a></li>
+          <li><code>SRC-X12</code> <a target="_blank" rel="noopener" href="https://www.t-mobile.com/news/business/t-mobile-launches-intentcx-with-openai">T-Mobile IntentCX / Team of Experts</a></li>
+          <li><code>SRC-X13</code> <a target="_blank" rel="noopener" href="https://uk.nttdata.com/insights/case-studies/sura-enhances-customer-experience-with-genai">NTT DATA / SURA</a></li>
+        </ol>
+      </div>
+
+      <footer>
+        <p><strong>研究狀態：</strong> 第一輪外部研究已完成；內部驗證尚未開始。公司頁面只能證明已發布的服務與公告，除非明確披露指標，否則不能證明採用率或表現。所有建議的 Prudential 角色、系統、RACI 與收益估算仍需客戶驗證。</p>
+        <p>獨立研究與討論原型。未與 Prudential 關聯，亦未獲 Prudential 背書。Prudential 及相關產品 / 服務名稱屬其各自所有者的商標。使用前請驗證所有工作假設。</p>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<dialog class="visual-dialog" id="visualDialog" aria-label="放大圖示">
+  <button class="utility-btn dialog-close" id="dialogClose" type="button">關閉</button>
+  <div id="visualContent"></div>
+</dialog>
+
+<script>
+(function () {
+  const root = document.documentElement;
+  const viewButtons = Array.from(document.querySelectorAll('.view-btn'));
+  const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
+  const topic = document.getElementById('topicFilter');
+  const items = Array.from(document.querySelectorAll('.filterable'));
+  const resultCount = document.getElementById('resultCount');
+
+  function activeValues(kind) {
+    return filterButtons
+      .filter(function (b) { return b.dataset.kind === kind && b.classList.contains('active'); })
+      .map(function (b) { return b.dataset.value; });
+  }
+
+  function applyFilters() {
+    const priorities = activeValues('priority');
+    const statuses = activeValues('status');
+    const selected主題 = topic.value;
+    const gm = root.dataset.view === 'gm';
+    let visible = 0;
+
+    items.forEach(function (item) {
+      const itemPriorities = (item.dataset.priority || '').split(',');
+      const itemStatuses = (item.dataset.status || '').split(',');
+      const priorityMatch = itemPriorities.some(function (v) { return priorities.includes(v); });
+      const statusMatch = itemStatuses.some(function (v) { return statuses.includes(v); });
+      const topicMatch = selected主題 === 'all' || item.dataset.topic === selected主題;
+      const viewMatch = !gm || item.dataset.gm === 'true';
+      const show = priorityMatch && statusMatch && topicMatch && viewMatch;
+      item.hidden = !show;
+      if (show) visible += 1;
+    });
+    resultCount.textContent = visible + ' 個可見研究模組 · ' + (gm ? 'GM 視圖' : '學習視圖');
+  }
+
+  viewButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      viewButtons.forEach(function (b) { b.classList.toggle('active', b === button); });
+      root.dataset.view = button.dataset.view;
+      if (button.dataset.view === 'gm') {
+        filterButtons.forEach(function (b) {
+          if (b.dataset.kind === 'priority') b.classList.toggle('active', b.dataset.value === 'P0');
+        });
+        topic.value = 'all';
+      } else {
+        filterButtons.forEach(function (b) { b.classList.add('active'); });
+        topic.value = 'all';
+      }
+      applyFilters();
+    });
+  });
+
+  filterButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      const kind = button.dataset.kind;
+      const peers = filterButtons.filter(function (b) { return b.dataset.kind === kind; });
+      const activeCount = peers.filter(function (b) { return b.classList.contains('active'); }).length;
+      if (button.classList.contains('active') && activeCount === 1) return;
+      button.classList.toggle('active');
+      applyFilters();
+    });
+  });
+  topic.addEventListener('change', applyFilters);
+
+  document.getElementById('expandAll').addEventListener('click', function () {
+    document.querySelectorAll('details:not([hidden])').forEach(function (d) { d.open = true; });
+  });
+  document.getElementById('collapseAll').addEventListener('click', function () {
+    document.querySelectorAll('details').forEach(function (d) { d.open = false; });
+  });
+
+  const visualDialog = document.getElementById('visualDialog');
+  const visualContent = document.getElementById('visualContent');
+  document.querySelectorAll('.zoom-btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const source = button.closest('.zoomable');
+      if (!source) return;
+      const clone = source.cloneNode(true);
+      clone.classList.remove('filterable', 'zoomable');
+      clone.removeAttribute('hidden');
+      clone.querySelectorAll('.zoom-btn').forEach(function (b) { b.remove(); });
+      visualContent.replaceChildren(clone);
+      visualDialog.showModal();
+    });
+  });
+  document.getElementById('dialogClose').addEventListener('click', function () { visualDialog.close(); });
+  visualDialog.addEventListener('click', function (event) {
+    if (event.target === visualDialog) visualDialog.close();
+  });
+
+  const toc = document.getElementById('toc');
+  const links = Array.from(toc.querySelectorAll('a'));
+  const sections = links.map(function (link) {
+    return { link: link, el: document.getElementById(link.getAttribute('href').slice(1)) };
+  }).filter(function (x) { return x.el; });
+
+  const observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      links.forEach(function (l) { l.classList.remove('active'); });
+      const match = sections.find(function (s) { return s.el === entry.target; });
+      if (match) {
+        match.link.classList.add('active');
+        if (window.innerWidth <= 1000) {
+          match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }
+    });
+  }, { rootMargin: '-12% 0px -76% 0px' });
+  sections.forEach(function (s) { observer.observe(s.el); });
+
+  links.forEach(function (link) {
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      const target = document.getElementById(link.getAttribute('href').slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', link.getAttribute('href'));
+      }
+    });
+  });
+
+  applyFilters();
+})();
+</script>
+</body>
 </html>
