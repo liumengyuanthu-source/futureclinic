@@ -1,20 +1,18 @@
 # PHKL Future Clinic Scenario Studio
 
-An interactive Option B prototype for reviewing the proposed future clinic journey before detailed scenario design.
+Local static prototype for Prudential Hong Kong clinical management-system discussion.
 
-## What this version covers
+Current scope after 30 Jul 2026 feedback:
 
-- Core personas: clinic administrator, nurse, contracted doctor and underwriter
-- AS-IS pain points, opportunities, TO-BE experience and KPI hypotheses
-- Clinic, doctor, underwriting and operations workspaces
-- Two synthetic cases demonstrating straight-through and clarification paths
-- Evidence-linked AI suggestions with explicit human decision boundaries
-- A vision-only external-provider scenario for later validation
+- CMS core users: clinic administrator, nurse / clinical assistant, and contracted doctor
+- Underwriter, financial adviser and customer are outside CMS
+- IQ is treated as current-state hand-off only unless PHKL confirms additional future-state functions
+- Future-state notifications and reschedule links are assumed to be CMS-owned
+- Prototype baseline exam: Current Health Assessment
+- Preparation advice: fast and do not drink water for 12 hours before the exam
+- Health Assessment components: blood sample, height/weight measurement, urine test and ECG
+- Nurse attaches lab test results to the digital report package in CMS
+- Doctor signs and sends the digital report package to Prudential Hong Kong
+- Partner clinic visibility and HNW concierge transport are future notes only, not core prototype roles or flows
 
-## How to use it
-
-Start in the Scenario Studio. Select a persona or scenario to open a centred story modal, then enter the interactive workspace. Applicant and adviser channels remain context-only under the agreed Option B scope.
-
-## Prototype status
-
-This is a discussion prototype, not a production system. All people, identifiers, medical data, product rules and outcomes are synthetic. Items marked with `*` are assumptions or conceptual AI capabilities requiring PHKL confirmation.
+All data, names, IDs, outcomes and metrics are synthetic unless otherwise stated.
