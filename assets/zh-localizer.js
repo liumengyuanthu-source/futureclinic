@@ -136,6 +136,7 @@ const DICT = new Map(Object.entries({
   "Today": "今日",
   "Requirements": "要求",
   "Screening": "篩查",
+  "Worklist": "工作清單",
   "Handover": "交接",
   "My queue": "我的隊列",
   "Examination": "檢查",
@@ -145,6 +146,7 @@ const DICT = new Map(Object.entries({
   "Clinic queue": "診所隊列",
   "Evidence requirements": "證據要求",
   "Screening and vitals": "篩查及生命體徵",
+  "Nurse worklist": "護士工作清單",
   "Doctor handover": "醫生交接",
   "Doctor queue": "醫生隊列",
   "Structured examination": "結構化檢查",
@@ -165,6 +167,17 @@ const DICT = new Map(Object.entries({
   "Evidence outstanding": "證據未完成",
   "No open items": "沒有待處理項目",
   "Worklist": "工作清單",
+  "Clinic admin action palette": "診所行政操作入口",
+  "Mapped from current CMS appointment actions": "由現有 CMS 預約操作映射而來",
+  "Clinic admin actions": "診所行政操作",
+  "Current CMS functions re-grouped as task-first controls": "將現有 CMS 功能重組為任務優先控制項",
+  "Edit applicant details": "編輯申請人資料",
+  "View patient profile": "查看病人檔案",
+  "View agent details": "查看顧問資料",
+  "Upload supporting documents": "上載支持文件",
+  "Schedule / reschedule appointment": "安排／更改預約",
+  "View calendar": "查看日曆",
+  "View pending lab results": "查看待完成化驗結果",
   "Ordered by appointment time · synthetic cases*": "按預約時間排序 · 合成個案*",
   "Time": "時間",
   "Applicant": "申請人",
@@ -195,9 +208,35 @@ const DICT = new Map(Object.entries({
   "Ready for nurse screening": "可交由護士篩查",
   "Mandatory evidence is currently complete.": "目前必需證據已完整。",
   "Send to nurse screening": "送往護士篩查",
+  "Send to nurse worklist": "送往護士工作清單",
   "Back to queue": "返回隊列",
 
+  "N01 · NURSE WORKLIST": "N01 · 護士工作清單",
+  "Nurse assessment worklist": "護士評估工作清單",
+  "Dashboard first: filter patients awaiting nurse assessment before starting vitals.": "先進入儀表板：在開始生命體徵檢查前篩選等待護士評估的病人。",
+  "3 awaiting nurse action*": "3 宗等待護士處理*",
+  "AWAITING ASSESSMENT*": "等待評估*",
+  "All patients view": "所有病人視圖",
+  "PENDING LABS*": "待完成化驗*",
+  "No pending labs": "沒有待完成化驗",
+  "NEXT APPOINTMENT*": "下一個預約*",
+  "EXAM PACKAGE*": "檢查套件*",
+  "CHA": "健康評估",
+  "Current Health Assessment": "現行健康評估",
+  "Assessment queue": "評估隊列",
+  "Filter: all patients · awaiting nurse assessment · synthetic cases*": "篩選：所有病人 · 等待護士評估 · 合成個案*",
+  "Patient Name": "病人姓名",
+  "Examination Package": "檢查套件",
+  "Missing Requirement": "缺失要求",
+  "Actions": "操作",
+  "Ready for screening": "可開始篩查",
+  "None": "沒有",
+  "Start Screening": "開始篩查",
+  "View Patient Record": "查看病人紀錄",
+  "View Pending Tasks": "查看待辦事項",
+
   "N01 · SCREENING": "N01 · 篩查",
+  "N02 · SCREENING": "N02 · 篩查",
   "Structured fields retain their source and validation state.": "結構化欄位會保留來源及驗證狀態。",
   "Completed": "已完成",
   "In progress": "進行中",
@@ -213,6 +252,7 @@ const DICT = new Map(Object.entries({
   "Source ·": "來源 ·",
 
   "N02 · CLINICAL HANDOVER": "N02 · 臨床交接",
+  "N03 · CLINICAL HANDOVER": "N03 · 臨床交接",
   "Outstanding evidence remains visible; it does not disappear at handover.": "未完成證據會持續可見，不會在交接時消失。",
   "Ready for doctor": "可交予醫生",
   "Screening not confirmed": "篩查尚未確認",
@@ -221,6 +261,7 @@ const DICT = new Map(Object.entries({
   "Screening evidence": "篩查證據",
   "Handover to doctor": "交接予醫生",
   "Complete N01 before handover.": "交接前請先完成 N01。",
+  "Complete N02 before handover.": "交接前請先完成 N02。",
   "Controls": "控制項",
   "Identity and consent verified": "身份及同意書已驗證",
   "Screening completed": "篩查已完成",
@@ -241,6 +282,7 @@ const DICT = new Map(Object.entries({
   "Declared history": "申報病史",
   "Examination findings": "檢查發現",
   "Doctor’s remarks": "醫生備註",
+  "Doctor actions": "醫生操作",
   "Save findings": "儲存發現",
   "Prepare report": "準備報告",
   "D03 · REPORT AND SIGN": "D03 · 報告及簽署",
@@ -419,9 +461,16 @@ function translatePlain(value) {
 }
 
 function translateTextNode(node, active) {
-  if (!originals.has(node)) originals.set(node, node.nodeValue);
+  const current = node.nodeValue;
+  if (!active) {
+    originals.set(node, current);
+    return;
+  }
+  if (!originals.has(node) || current !== translatePlain(originals.get(node))) {
+    originals.set(node, current);
+  }
   const original = originals.get(node);
-  const next = active ? translatePlain(original) : original;
+  const next = translatePlain(original);
   if (node.nodeValue !== next) node.nodeValue = next;
 }
 
