@@ -10,8 +10,9 @@ const roleConfig = {
     actor: copy("Clinic Admin", "診所行政人員"),
     defaultScreen: "C01",
     screens: [
-      ["C01", copy("Readiness queue", "準備狀態清單")],
+      ["C01", copy("Dashboard", "儀表板")],
       ["C02", copy("Appointment readiness", "預約準備狀態")],
+      ["C03", copy("Calendar", "日曆")],
     ],
   },
   nurse: {
@@ -20,7 +21,7 @@ const roleConfig = {
     actor: copy("Nurse K. Tsang", "護士 K. Tsang"),
     defaultScreen: "N01",
     screens: [
-      ["N01", copy("Worklist", "工作清單")],
+      ["N01", copy("Dashboard", "儀表板")],
       ["N02", copy("Screening", "篩查")],
       ["N03", copy("Handover", "交接")],
     ],
@@ -31,10 +32,11 @@ const roleConfig = {
     actor: copy("Dr H. Pang", "H. Pang 醫生"),
     defaultScreen: "D01",
     screens: [
-      ["D01", copy("Clinical queue", "臨床清單")],
+      ["D01", copy("Dashboard", "儀表板")],
       ["D02", copy("Examination", "臨床檢查")],
       ["D03", copy("Report draft", "報告草稿")],
       ["D04", copy("Review and submit", "審閱及提交")],
+      ["D05", copy("Calendar", "日曆")],
     ],
   },
   operations: {
@@ -71,12 +73,174 @@ const makeAudit = (caseKey) => [
   },
 ];
 
+const doctors = [
+  { id: "DR-PANG", name: copy("Dr H. Pang", "H. Pang 醫生"), specialty: copy("General practice", "普通科"), clinic: copy("Tsim Sha Tsui", "尖沙咀"), days: [1, 2, 3, 4, 5], slots: ["09:00", "09:20", "09:40", "10:00", "10:20", "10:40", "11:00", "14:00", "14:20", "14:40", "15:00", "15:20"] },
+  { id: "DR-LI", name: copy("Dr W. Li", "W. Li 醫生"), specialty: copy("General practice", "普通科"), clinic: copy("Tsim Sha Tsui", "尖沙咀"), days: [1, 3, 5], slots: ["09:00", "09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00", "15:30"] },
+  { id: "DR-CHAN", name: copy("Dr S. Chan", "S. Chan 醫生"), specialty: copy("Cardiology focus*", "心臟科重點*"), clinic: copy("Jordan satellite", "佐敦衛星診所"), days: [2, 4], slots: ["09:00", "09:30", "10:00", "10:30", "11:00", "14:30", "15:00", "15:30"] },
+  { id: "DR-CHEUNG", name: copy("Dr K. Cheung", "K. Cheung 醫生"), specialty: copy("General practice", "普通科"), clinic: copy("China Hong Kong City", "中港城"), days: [1, 2, 4, 6], slots: ["09:00", "09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00"] },
+  { id: "DR-NG", name: copy("Dr A. Ng", "A. Ng 醫生"), specialty: copy("Gynaecology focus*", "婦科重點*"), clinic: copy("Tsim Sha Tsui", "尖沙咀"), days: [3, 5, 6], slots: ["09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00"] },
+];
+
+const doctorById = (id) => doctors.find((doc) => doc.id === id) || doctors[0];
+
+const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const pad2 = (n) => String(n).padStart(2, "0");
+const isoDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const todayIso = () => isoDate(new Date());
+const parseIso = (iso) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+const shiftIso = (iso, days) => {
+  const d = parseIso(iso);
+  d.setDate(d.getDate() + days);
+  return isoDate(d);
+};
+const monthLabel = (ym, isZh) => {
+  const [y, m] = ym.split("-").map(Number);
+  return isZh ? `${y} 年 ${m} 月` : `${monthsEn[m - 1]} ${y}`;
+};
+const dayLabel = (iso, isZh) => {
+  const d = parseIso(iso);
+  return isZh ? `${d.getMonth() + 1} 月 ${d.getDate()} 日` : `${d.getDate()} ${monthsEn[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const hashSeed = (str) => {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+};
+const seededRng = (seed) => () => {
+  seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+  return seed / 4294967296;
+};
+
+const synthNames = ["Chan Ka Yiu", "Ng Siu Fung", "Tsang Ka Wai", "Lam Wing Sze", "Cheung Tsz Hin", "Lau Hiu Tung", "Kwok Man Hei", "Yeung Sze Wing", "Fung Chi Keung", "Tam Hoi Yan", "Mak Chun Kit", "Yuen Pui Shan", "Lo Kin Ming", "Chung Wai Lam", "So Tsz Ching", "Poon Ka Ho", "Au Hiu Nam", "Szeto Mei Ki"];
+const synthExams = [
+  copy("Current Health Assessment", "現行健康評估"),
+  copy("Current Health Assessment + ECG", "現行健康評估及心電圖"),
+  copy("Current Health Assessment + Ultrasound", "現行健康評估及超聲波掃描"),
+];
+
+const apptStatusMeta = {
+  booked: { label: copy("Booked", "已預約"), tone: "neutral" },
+  "checked-in": { label: copy("Checked in", "已到場"), tone: "info" },
+  ready: { label: copy("Ready for nurse", "可轉交護士"), tone: "success" },
+  "action-required": { label: copy("Action required", "需要處理"), tone: "danger" },
+  completed: { label: copy("Completed", "已完成"), tone: "success" },
+  "no-show": { label: copy("No-show", "缺席"), tone: "warning" },
+};
+
+function generatedAppointments(iso) {
+  const rnd = seededRng(hashSeed(`clinic-${iso}`));
+  const day = parseIso(iso).getDay();
+  const today = todayIso();
+  const list = [];
+  doctors.filter((doc) => doc.days.includes(day)).forEach((doc) => {
+    doc.slots.forEach((slot) => {
+      if (rnd() > 0.5) return;
+      const female = rnd() > 0.5;
+      let statusKey = "booked";
+      if (iso < today) statusKey = rnd() > 0.12 ? "completed" : "no-show";
+      else if (iso === today) statusKey = ["checked-in", "ready", "booked", "action-required"][Math.floor(rnd() * 4)];
+      list.push({
+        time: slot,
+        applicant: synthNames[Math.floor(rnd() * synthNames.length)],
+        ref: `APP-2026-${String(44000 + Math.floor(rnd() * 900))}`,
+        examType: synthExams[Math.floor(rnd() * synthExams.length)],
+        doctorId: doc.id,
+        sex: female ? copy("Female", "女") : copy("Male", "男"),
+        age: 24 + Math.floor(rnd() * 41),
+        statusKey,
+        caseKey: null,
+      });
+    });
+  });
+  return list;
+}
+
+function demoAppointment(c) {
+  return {
+    time: c.appointment,
+    applicant: c.applicant,
+    ref: c.caseId,
+    examType: c.examType,
+    doctorId: c.doctorId,
+    sex: c.sex,
+    age: c.age,
+    statusKey: "demo",
+    caseKey: c.key,
+  };
+}
+
+function dayAppointments(iso) {
+  const list = generatedAppointments(iso);
+  if (iso === todayIso()) Object.values(state.cases).forEach((c) => list.push(demoAppointment(c)));
+  return list.sort((a, b) => (a.time < b.time ? -1 : 1));
+}
+
+function rangeAppointments(fromIso, toIso) {
+  const out = [];
+  let iso = fromIso > toIso ? toIso : fromIso;
+  const end = fromIso > toIso ? fromIso : toIso;
+  let guard = 0;
+  while (iso <= end && guard < 62) {
+    dayAppointments(iso).forEach((appt) => out.push({ ...appt, date: iso }));
+    iso = shiftIso(iso, 1);
+    guard += 1;
+  }
+  return out;
+}
+
+function availabilityForDate(iso) {
+  const day = parseIso(iso).getDay();
+  const booked = {};
+  dayAppointments(iso).forEach((appt) => {
+    if (!booked[appt.doctorId]) booked[appt.doctorId] = new Set();
+    booked[appt.doctorId].add(appt.time);
+  });
+  return doctors
+    .filter((doc) => doc.days.includes(day))
+    .map((doc) => ({ doc, free: doc.slots.filter((slot) => !booked[doc.id] || !booked[doc.id].has(slot)) }));
+}
+
+function entryStatusMeta(appt) {
+  if (appt.caseKey) {
+    const r = readiness(state.cases[appt.caseKey]);
+    return { label: r.label, tone: r.tone };
+  }
+  return apptStatusMeta[appt.statusKey];
+}
+
 const initialCases = {
   A: {
     key: "A",
     caseId: "APP-2026-04418",
     applicant: "Wong Mei Ling",
     appointment: "09:20",
+    doctorId: "DR-PANG",
+    sex: copy("Female", "女"),
+    age: 41,
+    agent: {
+      code: "02818601*",
+      name: "Wang Pei*",
+      phone: "6156 1001*",
+      contact: copy("WhatsApp preferred*", "偏好以 WhatsApp 聯絡*"),
+      remarks: copy("Confirm with the agent before sharing medical details.*", "分享醫療資料前請先與代理確認。*"),
+    },
+    bookingRemarks: copy("Customer requested a morning slot and Cantonese-speaking staff.*", "客戶要求上午時段及懂廣東話的職員。*"),
+    followUp: { required: false, owner: copy("Nurse K. Tsang", "護士 K. Tsang"), dueDate: "", status: copy("Not required", "無需跟進"), notes: "" },
+    documents: [{ name: "health-questionnaire.pdf*", uploadedBy: copy("PruForce integration*", "PruForce 整合層*"), at: "27 Jul 2026*" }],
+    history: {
+      visits: [copy("12 Mar 2025 · Current Health Assessment · completed*", "2025 年 3 月 12 日 · 現行健康評估 · 已完成*")],
+      completedTests: [copy("Lipids, HbA1c and urinalysis (Mar 2025)*", "血脂、糖化血紅素及尿液分析（2025 年 3 月）*")],
+      pending: [],
+      notes: copy("No adverse findings in the previous assessment.*", "上一次評估沒有異常發現。*"),
+    },
+    supplementary: { info: "", tests: "" },
     clinic: copy("Tsim Sha Tsui", "尖沙咀"),
     examType: copy("Current Health Assessment", "現行健康評估"),
     ageSex: copy("41 · Female", "41 歲 · 女"),
@@ -119,6 +283,26 @@ const initialCases = {
     caseId: "APP-2026-04419",
     applicant: "Leung Chi Ho",
     appointment: "09:40",
+    doctorId: "DR-PANG",
+    sex: copy("Male", "男"),
+    age: 46,
+    agent: {
+      code: "02755118*",
+      name: "Chan Tai Man*",
+      phone: "9223 4410*",
+      contact: copy("Phone during office hours*", "辦公時間以電話聯絡*"),
+      remarks: copy("Agent asked for a reminder one day before the visit.*", "代理要求於到訪前一天提醒。*"),
+    },
+    bookingRemarks: copy("Blood draw needed. Customer was reminded about the 12-hour fast.*", "需要抽血。已提醒客戶空腹 12 小時。*"),
+    followUp: { required: true, owner: copy("Nurse K. Tsang", "護士 K. Tsang"), dueDate: shiftIso(todayIso(), 7), status: copy("Open", "未完成"), notes: "Attach Lipids and HbA1c results before report sign-off.*" },
+    documents: [{ name: "health-questionnaire.pdf*", uploadedBy: copy("PruForce integration*", "PruForce 整合層*"), at: "27 Jul 2026*" }],
+    history: {
+      visits: [copy("20 Sep 2024 · Current Health Assessment · completed*", "2024 年 9 月 20 日 · 現行健康評估 · 已完成*")],
+      completedTests: [copy("Lipids and resting ECG (Sep 2024)*", "血脂及靜態心電圖（2024 年 9 月）*")],
+      pending: [copy("Lipids and HbA1c (current visit)*", "血脂及糖化血紅素（本次到訪）*")],
+      notes: copy("Borderline blood pressure recorded in 2024. Recheck advised.*", "2024 年記錄血壓處於臨界水平，建議重新量度。*"),
+    },
+    supplementary: { info: "", tests: "" },
     clinic: copy("Tsim Sha Tsui", "尖沙咀"),
     examType: copy("Current Health Assessment", "現行健康評估"),
     ageSex: copy("46 · Male", "46 歲 · 男"),
@@ -161,6 +345,26 @@ const initialCases = {
     caseId: "APP-2026-04421",
     applicant: "Ho Wing Yan",
     appointment: "10:20",
+    doctorId: "DR-LI",
+    sex: copy("Female", "女"),
+    age: 38,
+    agent: {
+      code: "03921744*",
+      name: "Lee Ka Yan*",
+      phone: "6338 9021*",
+      contact: copy("Email preferred*", "偏好以電郵聯絡*"),
+      remarks: copy("New customer referred by an existing policyholder.*", "由現有保單持有人轉介的新客戶。*"),
+    },
+    bookingRemarks: copy("HKID name order differs from the application. Verify identity details on arrival.*", "香港身份證姓名次序與申請表不同。到場時請核實身份資料。*"),
+    followUp: { required: false, owner: copy("Clinic Admin", "診所行政人員"), dueDate: "", status: copy("Not required", "無需跟進"), notes: "" },
+    documents: [],
+    history: {
+      visits: [],
+      completedTests: [],
+      pending: [copy("Identity detail, consent and fasting confirmation*", "身份資料、同意書及空腹確認*")],
+      notes: copy("First visit. No previous clinic record.*", "首次到訪，沒有過往診所紀錄。*"),
+    },
+    supplementary: { info: "", tests: "" },
     clinic: copy("Tsim Sha Tsui", "尖沙咀"),
     examType: copy("Current Health Assessment + ECG", "現行健康評估及心電圖"),
     ageSex: copy("38 · Female", "38 歲 · 女"),
@@ -212,6 +416,12 @@ const state = {
   scenarioFilter: "all",
   cases: resetCases(),
   modal: null,
+  filter: { preset: "today", from: todayIso(), to: todayIso() },
+  calendarCursor: todayIso().slice(0, 7),
+  calendarDay: todayIso(),
+  availabilityDate: todayIso(),
+  nurseFilter: "all",
+  nurseSearch: "",
 };
 
 const personas = [
@@ -477,14 +687,44 @@ function renderShell(content) {
   return `<div class="app-shell"><a class="skip-link" href="#main-content">${isZh ? "跳到主要內容" : "Skip to content"}</a><aside class="sidebar"><div class="brand-lockup"><span class="brand-mark" aria-hidden="true"></span><div><strong>${escapeHtml(text(role.name))}</strong><small>${escapeHtml(text(role.subtitle))}</small></div></div>${button(copy("Back to Scenario Studio", "返回場景工作室"), "back-studio", { quiet: true })}<nav class="screen-nav" aria-label="${escapeHtml(text(role.name))}">${role.screens.map(([id, label]) => `<button type="button" data-action="nav" data-screen="${id}" class="${state.screen === id ? "is-active" : ""}"><span>${escapeHtml(text(label))}</span><small>${id}</small></button>`).join("")}</nav><div class="role-switcher"><span class="eyebrow">${isZh ? "示範角色" : "DEMO ROLE"}</span>${Object.entries(roleConfig).map(([key, config]) => `<button type="button" data-action="set-role" data-role="${key}" class="${state.role === key ? "is-current" : ""}">${escapeHtml(text(config.subtitle))}</button>`).join("")}</div><footer><strong>${escapeHtml(text(role.actor))}</strong><span>${isZh ? "模擬資料" : "Synthetic data"}</span></footer></aside><div class="workspace"><header class="topbar"><div class="topbar__title"><strong>${escapeHtml(c.applicant)}</strong><span>${c.caseId}</span>${topbarCaseStatus(c)}</div><div class="topbar__controls"><label><span>${isZh ? "示範個案" : "Demo case"}</span><select data-action="select-case" aria-label="${isZh ? "示範個案" : "Demo case"}">${Object.values(state.cases).map((item) => `<option value="${item.key}" ${item.key === state.selectedCase ? "selected" : ""}>${isZh ? "個案" : "Case"} ${item.key} · ${escapeHtml(item.applicant)}</option>`).join("")}</select></label>${button(isZh ? "EN" : "繁體中文", "toggle-locale", { quiet: true })}${button(copy("Reset", "重設"), "reset", { quiet: true })}</div></header><main id="main-content" class="main-content">${content}<div class="prototype-note"><strong>${isZh ? "診所 CMS 原型" : "Clinic CMS prototype"}</strong><span>${isZh ? "模擬資料 · PHKL 審核在 CMS 以外 · 非生產系統" : "Synthetic data · PHKL review outside CMS · not a production system"}</span></div></main></div></div>${renderModal()}`;
 }
 
+function presetLabel(preset) {
+  const labels = {
+    today: copy("Today", "今天"),
+    yesterday: copy("Yesterday", "昨天"),
+    last7: copy("Last 7 days", "最近 7 天"),
+    last30: copy("Last 30 days", "最近 30 天"),
+    custom: copy("Custom range", "自訂範圍"),
+  };
+  return labels[preset] || labels.custom;
+}
+
+function filterBar() {
+  const isZh = state.locale === "zh";
+  const presets = ["today", "yesterday", "last7", "last30"]
+    .map((p) => `<button type="button" class="chip ${state.filter.preset === p ? "is-active" : ""}" data-action="filter-preset" data-preset="${p}">${escapeHtml(text(presetLabel(p)))}</button>`)
+    .join("");
+  return `<div class="filter-bar"><div class="filter-bar__presets"><span>${isZh ? "時段" : "Period"}</span>${presets}</div><div class="filter-bar__range"><label><span>${isZh ? "由" : "From"}</span><input type="date" data-action="filter-from" value="${state.filter.from}"></label><label><span>${isZh ? "至" : "To"}</span><input type="date" data-action="filter-to" value="${state.filter.to}"></label></div></div>`;
+}
+
 function clinicQueue() {
   const isZh = state.locale === "zh";
-  const rows = Object.values(state.cases).map((c) => {
-    const r = readiness(c);
-    const next = c.adminBlockers.length ? copy("Resolve requirements", "處理未完成要求") : c.nurseReady ? copy("Review status", "查看狀態") : copy("Review readiness", "審閱準備狀態");
-    return `<tr class="${c.key === state.selectedCase ? "is-selected" : ""}"><td class="mono">${c.appointment}</td><td><strong>${escapeHtml(c.applicant)}</strong><small>${c.caseId}</small></td><td>${escapeHtml(text(c.examType))}</td><td>${status(r.label, r.tone)}</td><td>${escapeHtml(text(r.reason))}</td><td>${button(next, "open-case", { caseKey: c.key })}</td></tr>`;
+  const list = rangeAppointments(state.filter.from, state.filter.to);
+  const countReady = list.filter((a) => a.statusKey === "ready" || (a.caseKey && state.cases[a.caseKey].adminReady && !state.cases[a.caseKey].nurseReady && !state.cases[a.caseKey].adminBlockers.length)).length;
+  const countAction = list.filter((a) => a.statusKey === "action-required" || (a.caseKey && state.cases[a.caseKey].adminBlockers.length)).length;
+  const countRouted = list.filter((a) => a.statusKey === "completed" || (a.caseKey && state.cases[a.caseKey].nurseReady)).length;
+  const rows = list.map((a) => {
+    if (a.caseKey) {
+      const c = state.cases[a.caseKey];
+      const r = readiness(c);
+      const next = c.adminBlockers.length ? copy("Resolve requirements", "處理未完成要求") : c.nurseReady ? copy("Review status", "查看狀態") : copy("Review readiness", "審閱準備狀態");
+      return `<tr class="${a.caseKey === state.selectedCase ? "is-selected" : ""}"><td class="mono">${a.time}</td><td><strong>${escapeHtml(a.applicant)}</strong><small>${a.ref}</small></td><td>${escapeHtml(text(doctorById(a.doctorId).name))}</td><td>${escapeHtml(text(a.sex))}</td><td>${a.age}</td><td>${escapeHtml(text(a.examType))}</td><td>${status(r.label, r.tone)}</td><td>${escapeHtml(text(r.reason))}</td><td>${button(next, "open-case", { caseKey: a.caseKey })}</td></tr>`;
+    }
+    const meta = apptStatusMeta[a.statusKey];
+    const reason = a.statusKey === "action-required" ? copy("ID detail, Consent*", "身份資料、同意書*") : copy("No administrative blocker", "沒有行政阻礙");
+    return `<tr><td class="mono">${a.time}</td><td><strong>${escapeHtml(a.applicant)}</strong><small>${a.ref}</small></td><td>${escapeHtml(text(doctorById(a.doctorId).name))}</td><td>${escapeHtml(text(a.sex))}</td><td>${a.age}</td><td>${escapeHtml(text(a.examType))}</td><td>${status(meta.label, meta.tone)}</td><td>${escapeHtml(text(reason))}</td><td><span class="table-note">${isZh ? "只供查看*" : "View only*"}</span></td></tr>`;
   }).join("");
-  return `<div class="page-heading"><div><span class="eyebrow">C01 · ${isZh ? "準備狀態清單" : "READINESS QUEUE"}</span><h1>${isZh ? "今天的預約準備狀態" : "Today’s appointment readiness"}</h1><p>${isZh ? "先處理身份、同意及準備問題，再把個案轉交臨床團隊。" : "Resolve identity, consent and preparation issues before routing cases into clinical work."}</p></div>${status(copy("3 cases need triage*", "3 個個案待分流*"), "info")}</div><div class="metrics-grid">${metric(copy("BOOKED TODAY*", "今日預約*"), "24", copy("Synthetic operating view", "模擬營運畫面"))}${metric(copy("READY FOR NURSE*", "可轉交護士*"), String(Object.values(state.cases).filter((c) => c.adminReady && !c.nurseReady).length), copy("No admin blocker", "沒有行政阻礙"), "positive")}${metric(copy("ACTION REQUIRED*", "需要處理*"), String(Object.values(state.cases).filter((c) => c.adminBlockers.length).length), copy("Identity, consent or preparation", "身份、同意或準備"), "warning")}${metric(copy("ROUTED TO NURSE*", "已轉交護士*"), String(Object.values(state.cases).filter((c) => c.nurseReady).length), copy("Current demo state", "目前示範狀態"))}</div>${panel(copy("Readiness worklist", "準備狀態工作清單"), `<div class="table-wrap"><table><thead><tr><th>${isZh ? "時間" : "Time"}</th><th>${isZh ? "申請人" : "Applicant"}</th><th>${isZh ? "檢查項目" : "Examination"}</th><th>${isZh ? "準備狀態" : "Readiness"}</th><th>${isZh ? "阻礙原因" : "Blocking reason"}</th><th>${isZh ? "下一步" : "Next step"}</th></tr></thead><tbody>${rows}</tbody></table></div>`, copy("Case status determines the next action", "個案狀態決定下一步行動"))}`;
+  const periodCopy = state.filter.preset === "custom" ? copy(`${dayLabel(state.filter.from, false)} - ${dayLabel(state.filter.to, false)}`, `${dayLabel(state.filter.from, true)} - ${dayLabel(state.filter.to, true)}`) : presetLabel(state.filter.preset);
+  return `<div class="page-heading"><div><span class="eyebrow">C01 · ${isZh ? "儀表板" : "DASHBOARD"}</span><h1>${isZh ? "預約準備狀態儀表板" : "Appointment readiness dashboard"}</h1><p>${isZh ? "先處理身份、同意及準備問題，再把個案轉交臨床團隊。" : "Resolve identity, consent and preparation issues before routing cases into clinical work."}</p></div>${status(copy("3 cases need triage*", "3 個個案待分流*"), "info")}</div>${filterBar()}<div class="metrics-grid">${metric(copy("APPOINTMENTS*", "預約*"), String(list.length), periodCopy)}${metric(copy("READY FOR NURSE*", "可轉交護士*"), String(countReady), copy("No admin blocker", "沒有行政阻礙"), "positive")}${metric(copy("ACTION REQUIRED*", "需要處理*"), String(countAction), copy("Identity, consent or preparation", "身份、同意或準備"), "warning")}${metric(copy("ROUTED / COMPLETED*", "已轉交／完成*"), String(countRouted), copy("Routed to nurse or completed", "已轉交護士或已完成"))}</div>${panel(copy("Readiness worklist", "準備狀態工作清單"), `<div class="table-wrap"><table><thead><tr><th>${isZh ? "時間" : "Time"}</th><th>${isZh ? "申請人" : "Applicant"}</th><th>${isZh ? "醫生" : "Doctor Name"}</th><th>${isZh ? "性別" : "Sex"}</th><th>${isZh ? "年齡" : "Age"}</th><th>${isZh ? "檢查項目" : "Examination"}</th><th>${isZh ? "準備狀態" : "Readiness"}</th><th>${isZh ? "阻礙原因" : "Blocking reason"}</th><th>${isZh ? "下一步" : "Next step"}</th></tr></thead><tbody>${rows}</tbody></table></div>`, copy("Case status determines the next action", "個案狀態決定下一步行動"))}`;
 }
 
 function clinicReadiness() {
@@ -506,12 +746,70 @@ function clinicReadiness() {
   } else {
     action = `<div class="next-step"><div><span>${isZh ? "目前狀態" : "Current state"}</span><strong>${isZh ? "已轉交護士" : "Routed to nurse"}</strong><p>${isZh ? "個案已出現在護士評估清單。" : "The case is now visible in the nurse assessment worklist."}</p></div>${button(copy("Open nurse worklist", "開啟護士工作清單"), "open-nurse", { primary: true })}</div>`;
   }
-  return `<div class="page-heading"><div><span class="eyebrow">C02 · ${isZh ? "預約準備狀態" : "APPOINTMENT READINESS"}</span><h1>${isZh ? "選定預約的準備狀態" : "Selected appointment readiness"}</h1><p>${isZh ? "查看行政要求、準備指引及證據狀態，再決定是否轉交護士。" : "Review administrative requirements, preparation and evidence status before routing the case."}</p></div>${status(r.label, r.tone)}</div><div class="three-column">${panel(copy("Applicant and booking", "申請人及預約"), `${field(copy("Applicant", "申請人"), c.applicant)}${field(copy("Application", "申請編號"), c.caseId)}${field(copy("Appointment", "預約"), `${c.appointment} · ${text(c.clinic)}`)}${field(copy("Examination", "檢查項目"), c.examType)}`)}${panel(copy("Administrative readiness", "行政準備狀態"), adminFields.map(([label, value, tone]) => field(label, value, tone)).join(""))}${panel(copy("Clinical evidence status", "臨床證據狀態"), `${evidence}<div class="evidence-action ${c.missingEvidence.length ? "evidence-action--warning" : "evidence-action--success"}"><strong>${c.missingEvidence.length ? (isZh ? "化驗證據待完成" : "Laboratory evidence pending") : (isZh ? "證據已齊備" : "Evidence available")}</strong><span>${c.missingEvidence.length ? (isZh ? "不阻止檢查，但會阻止最終報告簽署。" : "Does not block examination, but blocks final report sign-off.") : (isZh ? "沒有未完成的必要證據。" : "No mandatory evidence is outstanding.")}</span></div>`)} </div>${panel(copy("Preparation advice", "檢查準備建議"), `<div class="advice-list"><p>${isZh ? "檢查前 12 小時禁食及不要飲水。" : "Fast and do not drink water for 12 hours before the examination."}</p><p>${isZh ? "包括抽血、身高體重、尿液檢查及心電圖。" : "Includes blood sample, height and weight, urine test and electrocardiogram."}</p><p>${isZh ? "確認地點、日期、時間及醫生性別偏好。" : "Confirm location, date, time and doctor gender preference."}</p></div>`, copy("Customer messages are CMS-owned in the target state*", "目標狀態由 CMS 負責客戶訊息*"))}${panel(copy("Recommended next step", "建議下一步"), action, "", "span-two")}`;
+  return `<div class="page-heading"><div><span class="eyebrow">C02 · ${isZh ? "預約準備狀態" : "APPOINTMENT READINESS"}</span><h1>${isZh ? "選定預約的準備狀態" : "Selected appointment readiness"}</h1><p>${isZh ? "查看行政要求、準備指引及證據狀態，再決定是否轉交護士。" : "Review administrative requirements, preparation and evidence status before routing the case."}</p></div>${status(r.label, r.tone)}</div><div class="three-column">${panel(copy("Applicant and booking", "申請人及預約"), `${field(copy("Applicant", "申請人"), c.applicant)}${field(copy("Application", "申請編號"), c.caseId)}${field(copy("Appointment", "預約"), `${c.appointment} · ${text(c.clinic)}`)}${field(copy("Examination", "檢查項目"), c.examType)}`)}${panel(copy("Administrative readiness", "行政準備狀態"), adminFields.map(([label, value, tone]) => field(label, value, tone)).join(""))}${panel(copy("Clinical evidence status", "臨床證據狀態"), `${evidence}<div class="evidence-action ${c.missingEvidence.length ? "evidence-action--warning" : "evidence-action--success"}"><strong>${c.missingEvidence.length ? (isZh ? "化驗證據待完成" : "Laboratory evidence pending") : (isZh ? "證據已齊備" : "Evidence available")}</strong><span>${c.missingEvidence.length ? (isZh ? "不阻止檢查，但會阻止最終報告簽署。" : "Does not block examination, but blocks final report sign-off.") : (isZh ? "沒有未完成的必要證據。" : "No mandatory evidence is outstanding.")}</span></div>`)} </div>${panel(copy("Preparation advice", "檢查準備建議"), `<div class="advice-list"><p>${isZh ? "檢查前 12 小時禁食及不要飲水。" : "Fast and do not drink water for 12 hours before the examination."}</p><p>${isZh ? "包括抽血、身高體重、尿液檢查及心電圖。" : "Includes blood sample, height and weight, urine test and electrocardiogram."}</p><p>${isZh ? "確認地點、日期、時間及醫生性別偏好。" : "Confirm location, date, time and doctor gender preference."}</p></div>`, copy("Customer messages are CMS-owned in the target state*", "目標狀態由 CMS 負責客戶訊息*"))}${panel(copy("Recommended next step", "建議下一步"), action, "", "span-two")}${panel(copy("Case actions", "個案操作"), `<div class="action-grid">${button(copy("Edit applicant details", "編輯申請人資料"), "edit-applicant")}${button(copy("View patient profile", "查看病人檔案"), "view-profile")}${button(copy("View agent details", "查看代理資料"), "view-agent")}${button(copy("Upload supporting documents", "上載證明文件"), "upload-docs")}${button(copy("Schedule / reschedule appointment", "預約／改期"), "reschedule")}${button(copy("View calendar", "查看日曆"), "open-calendar")}${button(copy("View pending lab results", "查看待完成化驗"), "pending-labs")}</div>`, copy("Administrative tools for the selected case", "選定個案的行政工具"))}`;
+}
+
+function calendarGrid(cursorYm, selectedIso) {
+  const isZh = state.locale === "zh";
+  const [y, m] = cursorYm.split("-").map(Number);
+  const startOffset = new Date(y, m - 1, 1).getDay();
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const weekdayNames = isZh ? ["日", "一", "二", "三", "四", "五", "六"] : ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  const cells = [];
+  for (let i = 0; i < startOffset; i += 1) cells.push(`<div class="calendar-cell calendar-cell--empty"></div>`);
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    const iso = `${y}-${pad2(m)}-${pad2(d)}`;
+    const appts = dayAppointments(iso);
+    const actionable = appts.filter((a) => a.statusKey === "action-required" || (a.caseKey && state.cases[a.caseKey].adminBlockers.length)).length;
+    const classes = ["calendar-cell"];
+    if (iso === todayIso()) classes.push("calendar-cell--today");
+    if (iso === selectedIso) classes.push("calendar-cell--selected");
+    if (!appts.length) classes.push("calendar-cell--quiet");
+    cells.push(`<button type="button" class="${classes.join(" ")}" data-action="calendar-day" data-date="${iso}"><span class="calendar-cell__day">${d}</span>${appts.length ? `<span class="calendar-cell__count">${appts.length} ${isZh ? "宗" : "appt"}</span>` : ""}${actionable ? `<span class="calendar-cell__alert">${actionable} ${isZh ? "待處理" : "action"}</span>` : ""}</button>`);
+  }
+  return `<div class="calendar-weekdays">${weekdayNames.map((w) => `<span>${w}</span>`).join("")}</div><div class="calendar-grid">${cells.join("")}</div>`;
+}
+
+function agendaList(appts, showOpen) {
+  const isZh = state.locale === "zh";
+  if (!appts.length) return `<p class="empty-note">${isZh ? "當天沒有預約。" : "No appointments on this day."}</p>`;
+  return appts.map((a) => {
+    const meta = entryStatusMeta(a);
+    const openBtn = showOpen && a.caseKey ? button(copy("Open case", "開啟個案"), "open-case", { caseKey: a.caseKey, quiet: true }) : "";
+    return `<div class="agenda-item"><span class="mono">${a.time}</span><div><strong>${escapeHtml(a.applicant)}</strong><span>${escapeHtml(text(doctorById(a.doctorId).name))} · ${escapeHtml(text(a.examType))}</span></div>${status(meta.label, meta.tone)}${openBtn}</div>`;
+  }).join("");
+}
+
+function availabilityPanel(iso) {
+  const isZh = state.locale === "zh";
+  const availability = availabilityForDate(iso);
+  if (!availability.length) return `<p class="empty-note">${isZh ? "當天沒有醫生當值。" : "No doctors are rostered on this date."}</p>`;
+  return `<div class="availability-list">${availability.map(({ doc, free }) => `<div class="availability-item"><div><strong>${escapeHtml(text(doc.name))}</strong><span>${escapeHtml(text(doc.specialty))} · ${escapeHtml(text(doc.clinic))}</span></div><div class="availability-item__slots">${free.length ? `${free.slice(0, 6).map((slot) => `<span class="slot">${slot}</span>`).join("")}${free.length > 6 ? `<span class="slot slot--more">+${free.length - 6}</span>` : ""}` : `<span class="slot slot--none">${isZh ? "已約滿" : "Fully booked"}</span>`}</div></div>`).join("")}</div>`;
+}
+
+function clinicCalendar() {
+  const isZh = state.locale === "zh";
+  return `<div class="page-heading"><div><span class="eyebrow">C03 · ${isZh ? "日曆" : "CALENDAR"}</span><h1>${isZh ? "預約日曆及資源規劃" : "Appointment calendar and resource planning"}</h1><p>${isZh ? "按月查看預約分佈，選擇日期查看議程及可約醫生。" : "Review monthly appointment spread, then open a day for its agenda and available doctors."}</p></div>${status(copy("Synthetic schedule*", "模擬排程*"), "info")}</div><div class="calendar-layout">${panel(copy("Appointment calendar", "預約日曆"), `<div class="calendar-toolbar">${button(copy("Previous month", "上一個月"), "calendar-prev", { quiet: true })}<strong>${monthLabel(state.calendarCursor, isZh)}</strong>${button(copy("Next month", "下一個月"), "calendar-next", { quiet: true })}</div>${calendarGrid(state.calendarCursor, state.calendarDay)}`, copy("Select a day to open its agenda", "選擇日期以查看議程"))}<div class="calendar-side">${panel(copy(`${"Day agenda"} · ${dayLabel(state.calendarDay, false)}`, `${"當日議程"} · ${dayLabel(state.calendarDay, true)}`), agendaList(dayAppointments(state.calendarDay), true))}${panel(copy("Doctor availability", "醫生可約狀態"), `<label class="form-field"><span>${isZh ? "選擇日期" : "Select date"}</span><input type="date" data-action="availability-date" value="${state.availabilityDate}"></label>${availabilityPanel(state.availabilityDate)}`, copy("Select a date to view available doctors", "選擇日期以查看可約醫生"))}</div></div>`;
+}
+
+function doctorCalendar() {
+  const isZh = state.locale === "zh";
+  const mine = dayAppointments(state.availabilityDate).filter((a) => a.doctorId === "DR-PANG");
+  return `<div class="page-heading"><div><span class="eyebrow">D05 · ${isZh ? "日曆" : "CALENDAR"}</span><h1>${isZh ? "醫生日曆及可約狀態" : "Doctor calendar and availability"}</h1><p>${isZh ? "選擇日期查看我的診症安排，以及當天可約的醫生。" : "Select a date to review my schedule and the doctors available that day."}</p></div>${status(copy("Dr H. Pang · Tsim Sha Tsui", "H. Pang 醫生 · 尖沙咀"), "info")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy(`My schedule · ${dayLabel(state.availabilityDate, false)}`, `我的安排 · ${dayLabel(state.availabilityDate, true)}`), `<label class="form-field"><span>${isZh ? "選擇日期" : "Select date"}</span><input type="date" data-action="availability-date" value="${state.availabilityDate}"></label>${agendaList(mine, false)}`)}${panel(copy("Available doctors on this date", "當天可約醫生"), availabilityPanel(state.availabilityDate), copy("Calendar button: pick a date, see who is available", "日曆按鈕：選擇日期，查看可約醫生"))}</div>`;
 }
 
 function nurseWorklist() {
   const isZh = state.locale === "zh";
-  const rows = Object.values(state.cases).map((c) => {
+  const q = state.nurseSearch.trim().toLowerCase();
+  const filtered = Object.values(state.cases).filter((c) => {
+    if (q && !c.applicant.toLowerCase().includes(q) && !c.caseId.toLowerCase().includes(q)) return false;
+    if (state.nurseFilter === "ready") return c.nurseReady && !c.screeningComplete && !c.adminBlockers.length;
+    if (state.nurseFilter === "labs") return c.missingEvidence.length > 0;
+    if (state.nurseFilter === "blocked") return c.adminBlockers.length > 0;
+    if (state.nurseFilter === "complete") return c.handoverComplete && !c.missingEvidence.length;
+    return true;
+  });
+  const rows = filtered.map((c) => {
     let label;
     let tone;
     let action;
@@ -522,7 +820,7 @@ function nurseWorklist() {
     } else if (!c.nurseReady) {
       label = copy("Awaiting admin routing", "等候行政轉交");
       tone = "neutral";
-      action = button(copy("View record", "查看紀錄"), "view-record", { caseKey: c.key });
+      action = button(copy("View Patient Record", "查看病人紀錄"), "view-profile", { caseKey: c.key });
     } else if (c.followUpRequested && c.missingEvidence.length) {
       label = copy("Lab follow-up requested", "已要求化驗跟進");
       tone = "warning";
@@ -530,7 +828,7 @@ function nurseWorklist() {
     } else if (!c.screeningComplete) {
       label = copy("Ready for screening", "可開始篩查");
       tone = "info";
-      action = `${button(copy("Start screening", "開始篩查"), "start-screening", { caseKey: c.key, primary: true })}<button type="button" class="table-link" data-action="view-record" data-case="${c.key}">${isZh ? "紀錄" : "Record"}</button>`;
+      action = `${button(copy("Start screening", "開始篩查"), "start-screening", { caseKey: c.key, primary: true })}<button type="button" class="table-link" data-action="view-profile" data-case="${c.key}">${isZh ? "紀錄" : "Record"}</button>`;
     } else if (!c.handoverComplete) {
       label = c.missingEvidence.length ? copy("Screening complete · labs pending", "篩查完成 · 化驗待完成") : copy("Ready for handover", "可交接醫生");
       tone = c.missingEvidence.length ? "warning" : "success";
@@ -542,12 +840,13 @@ function nurseWorklist() {
     } else {
       label = copy("Clinical evidence complete", "臨床證據已齊備");
       tone = "success";
-      action = button(copy("View record", "查看紀錄"), "view-record", { caseKey: c.key });
+      action = button(copy("View Patient Record", "查看病人紀錄"), "view-profile", { caseKey: c.key });
     }
     const missing = c.adminBlockers.length ? c.adminBlockers.join(", ") : c.missingEvidence.length ? c.missingEvidence.join(", ") : copy("None", "沒有");
-    return `<tr class="${c.key === state.selectedCase ? "is-selected" : ""}"><td class="mono">${c.appointment}</td><td><strong>${escapeHtml(c.applicant)}</strong><small>${c.caseId}</small></td><td>${escapeHtml(text(c.examType))}</td><td>${status(label, tone)}</td><td>${escapeHtml(text(missing))}</td><td class="next-action-cell">${action}</td></tr>`;
+    return `<tr class="${c.key === state.selectedCase ? "is-selected" : ""}"><td><strong>${escapeHtml(c.applicant)}</strong><small>${c.caseId}</small></td><td class="mono">${c.appointment}</td><td>${escapeHtml(text(c.examType))}</td><td>${status(label, tone)}</td><td>${escapeHtml(text(missing))}</td><td class="next-action-cell">${action}</td></tr>`;
   }).join("");
-  return `<div class="page-heading"><div><span class="eyebrow">N01 · ${isZh ? "護士工作清單" : "NURSE WORKLIST"}</span><h1>${isZh ? "護士評估工作清單" : "Nurse assessment worklist"}</h1><p>${isZh ? "清楚顯示現在可以處理哪位病人，以及其餘個案受甚麼阻礙。" : "See which patient can be assessed now and what blocks the remaining cases."}</p></div>${status(copy("Status-driven next steps", "狀態驅動下一步"), "info")}</div><div class="metrics-grid">${metric(copy("READY TO START*", "可開始*"), String(Object.values(state.cases).filter((c) => c.nurseReady && !c.screeningComplete).length), copy("Administrative checks complete", "行政檢查已完成"), "positive")}${metric(copy("LAB FOLLOW-UP*", "化驗跟進*"), String(Object.values(state.cases).filter((c) => c.missingEvidence.length).length), copy("Visible until attached", "附加前保持可見"), "warning")}${metric(copy("ADMIN BLOCKED*", "行政受阻*"), String(Object.values(state.cases).filter((c) => c.adminBlockers.length).length), copy("Cannot start screening", "不可開始篩查"), "warning")}${metric(copy("NEXT APPOINTMENT*", "下一個預約*"), "09:20", "Wong Mei Ling")}</div>${panel(copy("Assessment queue", "評估清單"), `<div class="table-wrap"><table><thead><tr><th>${isZh ? "時間" : "Time"}</th><th>${isZh ? "病人" : "Patient"}</th><th>${isZh ? "檢查項目" : "Examination"}</th><th>${isZh ? "狀態" : "Status"}</th><th>${isZh ? "未完成要求" : "Missing requirement"}</th><th>${isZh ? "下一步" : "Next step"}</th></tr></thead><tbody>${rows}</tbody></table></div>`, copy("One primary action per case", "每個個案只有一個主要行動"))}`;
+  const filterControl = `<div class="filter-bar"><div class="filter-bar__presets"><span>${isZh ? "篩選" : "Filter"}</span><select data-action="nurse-filter" aria-label="${isZh ? "篩選病人" : "Filter patients"}"><option value="all" ${state.nurseFilter === "all" ? "selected" : ""}>${isZh ? "全部病人" : "All patients"}</option><option value="ready" ${state.nurseFilter === "ready" ? "selected" : ""}>${isZh ? "可開始篩查" : "Ready for screening"}</option><option value="labs" ${state.nurseFilter === "labs" ? "selected" : ""}>${isZh ? "化驗待完成" : "Labs pending"}</option><option value="blocked" ${state.nurseFilter === "blocked" ? "selected" : ""}>${isZh ? "行政受阻" : "Admin blocked"}</option><option value="complete" ${state.nurseFilter === "complete" ? "selected" : ""}>${isZh ? "證據已齊備" : "Evidence complete"}</option></select><input type="search" data-action="nurse-search" value="${escapeHtml(state.nurseSearch)}" placeholder="${isZh ? "搜尋姓名或編號" : "Search name or ID"}" aria-label="${isZh ? "搜尋病人" : "Search patients"}"></div><div class="filter-bar__range">${button(copy("View Pending Tasks", "查看待辦任務"), "pending-tasks")}</div></div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">N01 · ${isZh ? "儀表板" : "DASHBOARD"}</span><h1>${isZh ? "護士評估工作清單" : "Nurse assessment worklist"}</h1><p>${isZh ? "清楚顯示現在可以處理哪位病人，以及其餘個案受甚麼阻礙。" : "See which patient can be assessed now and what blocks the remaining cases."}</p></div>${status(copy("Status-driven next steps", "狀態驅動下一步"), "info")}</div><div class="metrics-grid">${metric(copy("READY TO START*", "可開始*"), String(Object.values(state.cases).filter((c) => c.nurseReady && !c.screeningComplete && !c.adminBlockers.length).length), copy("Administrative checks complete", "行政檢查已完成"), "positive")}${metric(copy("LAB FOLLOW-UP*", "化驗跟進*"), String(Object.values(state.cases).filter((c) => c.missingEvidence.length).length), copy("Visible until attached", "附加前保持可見"), "warning")}${metric(copy("ADMIN BLOCKED*", "行政受阻*"), String(Object.values(state.cases).filter((c) => c.adminBlockers.length).length), copy("Cannot start screening", "不可開始篩查"), "warning")}${metric(copy("NEXT APPOINTMENT*", "下一個預約*"), "09:20", "Wong Mei Ling")}</div>${filterControl}${panel(copy("Assessment queue", "評估清單"), `<div class="table-wrap"><table><thead><tr><th>${isZh ? "病人姓名" : "Patient Name"}</th><th>${isZh ? "預約時間" : "Appointment Time"}</th><th>${isZh ? "檢查套餐" : "Examination Package"}</th><th>${isZh ? "狀態" : "Status"}</th><th>${isZh ? "未完成要求" : "Missing Requirement"}</th><th>${isZh ? "下一步" : "Next step"}</th></tr></thead><tbody>${rows || `<tr><td colspan="6"><span class="table-note">${isZh ? "沒有符合篩選條件的個案。" : "No cases match the current filter."}</span></td></tr>`}</tbody></table></div>`, copy("One primary action per case", "每個個案只有一個主要行動"))}`;
 }
 
 function nurseScreening() {
@@ -597,7 +896,8 @@ function doctorQueue() {
     }
     return `<button type="button" class="case-card ${c.key === state.selectedCase ? "is-selected" : ""}" data-action="open-doctor-case" data-case="${c.key}" ${!c.handoverComplete ? "disabled" : ""}><span class="mono">${c.appointment}</span><strong>${escapeHtml(c.applicant)}</strong><small>${c.caseId}<br>${escapeHtml(text(c.examType))}</small>${status(label, tone)}</button>`;
   }).join("");
-  return `<div class="page-heading"><div><span class="eyebrow">D01 · ${isZh ? "臨床清單" : "CLINICAL QUEUE"}</span><h1>${isZh ? "我的臨床個案" : "My clinical queue"}</h1><p>${isZh ? "行政受阻個案不會進入可處理清單。臨床檢查與報告準備狀態分開顯示。" : "Admin-blocked cases stay out of the ready queue. Examination readiness and report readiness are shown separately."}</p></div>${status(copy("Prioritised by readiness", "按準備狀態排序"), "info")}</div>${panel(copy("Today’s cases", "今日個案"), `<div class="case-cards">${cards}</div>`, copy("Dr H. Pang · Tsim Sha Tsui", "H. Pang 醫生 · 尖沙咀"))}`;
+  const myToday = dayAppointments(todayIso()).filter((a) => a.doctorId === "DR-PANG").length;
+  return `<div class="page-heading"><div><span class="eyebrow">D01 · ${isZh ? "儀表板" : "DASHBOARD"}</span><h1>${isZh ? "我的臨床儀表板" : "My clinical dashboard"}</h1><p>${isZh ? "行政受阻個案不會進入可處理清單。臨床檢查與報告準備狀態分開顯示。" : "Admin-blocked cases stay out of the ready queue. Examination readiness and report readiness are shown separately."}</p></div><div class="page-heading__actions">${status(copy("Prioritised by readiness", "按準備狀態排序"), "info")}${button(copy("View calendar", "查看日曆"), "open-doctor-calendar")}</div></div><div class="metrics-grid">${metric(copy("MY CASES TODAY*", "我今天的個案*"), String(myToday), copy("Includes synthetic schedule", "包括模擬排程"))}${metric(copy("AWAITING HANDOVER*", "等候交接*"), String(eligible.filter((c) => !c.handoverComplete).length), copy("Nurse screening in progress", "護士篩查進行中"))}${metric(copy("REPORT BLOCKED*", "報告受阻*"), String(eligible.filter((c) => c.handoverComplete && c.missingEvidence.length).length), copy("Laboratory evidence pending", "化驗證據待完成"), "warning")}${metric(copy("READY FOR EXAM*", "可進行檢查*"), String(eligible.filter((c) => c.handoverComplete && !c.missingEvidence.length).length), copy("Evidence package complete", "證據套件完整"), "positive")}</div>${panel(copy("Today’s cases", "今日個案"), `<div class="case-cards">${cards}</div>`, copy("Dr H. Pang · Tsim Sha Tsui", "H. Pang 醫生 · 尖沙咀"))}`;
 }
 
 function doctorExam() {
@@ -608,7 +908,12 @@ function doctorExam() {
   }
   const clinicalReadiness = c.missingEvidence.length ? copy("Examination can proceed. Report sign-off remains blocked by pending laboratory evidence.", "可以進行檢查。由於化驗證據待完成，報告簽署仍然受阻。") : copy("Examination and report preparation can proceed. The evidence package is complete.", "可以進行檢查及準備報告。證據套件已完整。" );
   const findings = Object.entries(c.findings).filter(([key]) => key !== "remarks").map(([key, value]) => `<label class="form-field"><span>${escapeHtml(key.replaceAll(/([A-Z])/g, " $1"))}</span><input value="${escapeHtml(text(value))}"></label>`).join("");
-  return `<div class="page-heading"><div><span class="eyebrow">D02 · ${isZh ? "臨床檢查" : "CLINICAL EXAMINATION"}</span><h1>${isZh ? "結構化臨床檢查" : "Structured clinical examination"}</h1><p>${isZh ? "醫生查看護士證據、完成檢查，並清楚看到甚麼會阻止報告簽署。" : "Review nurse evidence, complete the examination and see exactly what blocks report sign-off."}</p></div>${status(c.missingEvidence.length ? copy("Report blocked by labs", "報告受化驗阻礙") : copy("Evidence complete", "證據已齊備"), c.missingEvidence.length ? "warning" : "success")}</div><div class="three-column doctor-layout">${panel(copy("Applicant context", "申請人資料"), `${field(copy("Age / sex", "年齡／性別"), c.ageSex)}${field(copy("Product sought*", "申請產品*"), c.product)}${field(copy("Sum assured band*", "保額級別*"), c.sumBand)}${field(copy("Nurse screening", "護士篩查"), c.screeningComplete ? copy("Complete", "已完成") : copy("Pending", "待完成"), c.screeningComplete ? "success" : "warning")}`)}${panel(copy("Clinical readiness and next step", "臨床準備狀態及下一步"), `<div class="next-step ${c.missingEvidence.length ? "next-step--warning" : "next-step--success"}"><div><span>${isZh ? "目前狀態" : "Current state"}</span><strong>${c.missingEvidence.length ? (isZh ? "檢查可繼續，報告簽署受阻" : "Exam ready, report sign-off blocked") : (isZh ? "可準備報告" : "Ready to prepare report")}</strong><p>${escapeHtml(text(clinicalReadiness))}</p></div></div><div class="compact-links"><button type="button" class="table-link" data-action="view-record" data-case="${c.key}">${isZh ? "查看病人摘要" : "View patient summary"}</button><button type="button" class="table-link" data-action="view-evidence" data-case="${c.key}">${isZh ? "查看護士證據" : "View nurse evidence"}</button></div>`)}${panel(copy("Examination findings", "檢查結果"), `<div class="form-grid form-grid--two">${findings}</div><label class="form-field"><span>${isZh ? "醫生備註" : "Doctor remarks"}</span><textarea rows="4">${escapeHtml(text(c.findings.remarks))}</textarea></label><div class="action-bar action-bar--inside">${button(c.findingsSaved ? copy("Findings saved", "結果已儲存") : copy("Save findings", "儲存結果"), "save-findings", { primary: true, disabled: c.findingsSaved })}${button(copy("Prepare report", "準備報告"), "prepare-report", { disabled: !c.findingsSaved })}</div>`, "", "span-two")}</div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">D02 · ${isZh ? "臨床檢查" : "CLINICAL EXAMINATION"}</span><h1>${isZh ? "結構化臨床檢查" : "Structured clinical examination"}</h1><p>${isZh ? "醫生查看護士證據、完成檢查，並清楚看到甚麼會阻止報告簽署。" : "Review nurse evidence, complete the examination and see exactly what blocks report sign-off."}</p></div>${status(c.missingEvidence.length ? copy("Report blocked by labs", "報告受化驗阻礙") : copy("Evidence complete", "證據已齊備"), c.missingEvidence.length ? "warning" : "success")}</div><div class="three-column doctor-layout">${panel(copy("Applicant context", "申請人資料"), `${field(copy("Age / sex", "年齡／性別"), c.ageSex)}${field(copy("Product sought*", "申請產品*"), c.product)}${field(copy("Sum assured band*", "保額級別*"), c.sumBand)}${field(copy("Nurse screening", "護士篩查"), c.screeningComplete ? copy("Complete", "已完成") : copy("Pending", "待完成"), c.screeningComplete ? "success" : "warning")}`)}${panel(copy("Clinical readiness and next step", "臨床準備狀態及下一步"), `<div class="next-step ${c.missingEvidence.length ? "next-step--warning" : "next-step--success"}"><div><span>${isZh ? "目前狀態" : "Current state"}</span><strong>${c.missingEvidence.length ? (isZh ? "檢查可繼續，報告簽署受阻" : "Exam ready, report sign-off blocked") : (isZh ? "可準備報告" : "Ready to prepare report")}</strong><p>${escapeHtml(text(clinicalReadiness))}</p></div></div><div class="compact-links"><button type="button" class="table-link" data-action="view-record" data-case="${c.key}">${isZh ? "查看病人摘要" : "View patient summary"}</button><button type="button" class="table-link" data-action="view-evidence" data-case="${c.key}">${isZh ? "查看護士證據" : "View nurse evidence"}</button></div>`)}${panel(copy("Examination findings", "檢查結果"), `<div class="form-grid form-grid--two">${findings}</div><label class="form-field"><span>${isZh ? "醫生備註" : "Doctor remarks"}</span><textarea rows="4">${escapeHtml(text(c.findings.remarks))}</textarea></label><div class="action-bar action-bar--inside">${button(c.findingsSaved ? copy("Findings saved", "結果已儲存") : copy("Save findings", "儲存結果"), "save-findings", { primary: true, disabled: c.findingsSaved })}${button(copy("Prepare report", "準備報告"), "prepare-report", { disabled: !c.findingsSaved })}</div>`, "", "span-two")}</div>${doctorExamExtras(c)}`;
+}
+
+function doctorExamExtras(c) {
+  const isZh = state.locale === "zh";
+  return `<div class="three-column doctor-layout">${panel(copy("Agent details", "代理資料"), `${field(copy("Agent code", "代理編號"), c.agent.code)}${field(copy("Agent name", "代理姓名"), c.agent.name)}${field(copy("Agent phone", "代理電話"), c.agent.phone)}${field(copy("Agent contact", "代理聯絡方式"), c.agent.contact)}${field(copy("Agent remarks", "代理備註"), c.agent.remarks)}`, copy("Shared by the booking integration*", "由預約整合層提供*"))}${panel(copy("Booking remarks", "預約備註"), `<p class="note-block">${escapeHtml(text(c.bookingRemarks))}</p>`, copy("Context captured before the patient visit", "病人到訪前記錄的上下文"))}${panel(copy("Patient record follow-up", "病人紀錄跟進"), `<div class="form-grid form-grid--two"><label class="form-field"><span>${isZh ? "需要跟進" : "Follow-up required"}</span><select data-field="followUp.required"><option value="yes" ${c.followUp.required ? "selected" : ""}>${isZh ? "是" : "Yes"}</option><option value="no" ${c.followUp.required ? "" : "selected"}>${isZh ? "否" : "No"}</option></select></label><label class="form-field"><span>${isZh ? "跟進負責人" : "Follow-up owner"}</span><input data-field="followUp.owner" value="${escapeHtml(text(c.followUp.owner))}"></label><label class="form-field"><span>${isZh ? "到期日" : "Due date"}</span><input type="date" data-field="followUp.dueDate" value="${c.followUp.dueDate}"></label><label class="form-field"><span>${isZh ? "狀態" : "Status"}</span><input data-field="followUp.status" value="${escapeHtml(text(c.followUp.status))}"></label></div><label class="form-field"><span>${isZh ? "跟進備註" : "Follow-up notes"}</span><textarea rows="3" data-field="followUp.notes">${escapeHtml(c.followUp.notes)}</textarea></label><div class="action-bar action-bar--inside">${button(copy("Save follow-up", "儲存跟進"), "save-followup", { primary: true })}</div>`)}</div><div class="content-with-rail content-with-rail--wide">${panel(copy("Additional customer information", "補充客戶資料"), `<label class="form-field"><span>${isZh ? "補充資料" : "Supplementary information"}</span><textarea rows="3" data-field="supplementary.info" placeholder="${isZh ? "記錄檢查過程中發現的補充客戶資料" : "Capture additional customer information found during the process"}">${escapeHtml(c.supplementary.info)}</textarea></label><label class="form-field"><span>${isZh ? "補充檢查或評估" : "Supplementary tests or assessments"}</span><input data-field="supplementary.tests" value="${escapeHtml(c.supplementary.tests)}" placeholder="${isZh ? "例如：超聲波、額外血液檢查" : "e.g. ultrasound, additional blood tests"}"></label><div class="action-bar action-bar--inside">${button(copy("Save supplementary details", "儲存補充資料"), "save-supplementary", { primary: true })}</div>`, copy("Documented by the doctor during the process", "由醫生於檢查過程中記錄"))}${panel(copy("Patient profile and reports", "病人檔案及報告"), `<div class="action-stack">${button(copy("View patient profile", "查看病人檔案"), "view-profile", { full: true })}${button(copy("Generate Underwriting Report", "生成核保報告"), "uw-report", { full: true, primary: true })}</div>`, copy("History, evidence and consolidated PDF output", "病史、證據及綜合 PDF 輸出"))}</div>`;
 }
 
 function evidencePackage(c) {
@@ -675,6 +980,7 @@ function renderWorkspace() {
   let content = "";
   if (state.screen === "C01") content = clinicQueue();
   if (state.screen === "C02") content = clinicReadiness();
+  if (state.screen === "C03") content = clinicCalendar();
   if (state.screen === "N01") content = nurseWorklist();
   if (state.screen === "N02") content = nurseScreening();
   if (state.screen === "N03") content = nurseHandover();
@@ -682,6 +988,7 @@ function renderWorkspace() {
   if (state.screen === "D02") content = doctorExam();
   if (state.screen === "D03") content = doctorDraft();
   if (state.screen === "D04") content = doctorSign();
+  if (state.screen === "D05") content = doctorCalendar();
   if (state.screen === "O01") content = operations();
   return renderShell(content);
 }
@@ -733,7 +1040,68 @@ function renderModal() {
     title = copy("Nurse evidence", "護士證據");
     body = `${Object.entries(c.vitals).map(([key, value]) => field(copy(key.replaceAll(/([A-Z])/g, " $1"), key), value)).join("")}${evidencePackage(c)}`;
   }
-  return `<div class="modal-backdrop" data-action="close-modal"><section class="modal modal--medium" role="dialog" aria-modal="true" aria-label="${escapeHtml(text(title))}" data-modal-panel><header class="modal__header"><div><span class="eyebrow">${escapeHtml(text(eyebrow))}</span><h2>${escapeHtml(text(title))}</h2></div>${button(copy("Close", "關閉"), "close-modal", { quiet: true })}</header><div class="modal__body">${body}</div></section></div>`;
+  if (state.modal.type === "profile") {
+    title = copy("Patient profile and history", "病人檔案及病史");
+    eyebrow = copy("Consolidated synthetic record*", "綜合模擬紀錄*");
+    const list = (items, emptyCopy) => items.length ? `<ul class="record-list">${items.map((item) => `<li>${escapeHtml(text(item))}</li>`).join("")}</ul>` : `<p class="empty-note">${escapeHtml(text(emptyCopy))}</p>`;
+    const pendingItems = [...c.history.pending, ...c.missingEvidence.map((item) => copy(`${item} · laboratory result pending*`, `${item} · 化驗結果待完成*`))];
+    body = `${field(copy("Applicant", "申請人"), c.applicant)}${field(copy("Application", "申請編號"), c.caseId)}${field(copy("Age / sex", "年齡／性別"), c.ageSex)}${field(copy("Product sought*", "申請產品*"), c.product)}${field(copy("Current status", "目前狀態"), readiness(c).label)}<div class="section-title">${isZh ? "過往就診" : "Previous visits"}</div>${list(c.history.visits, copy("No previous visits on record.*", "沒有過往就診紀錄。*"))}<div class="section-title">${isZh ? "已完成檢查" : "Completed tests"}</div>${list(c.history.completedTests, copy("No completed tests on record.*", "沒有已完成檢查紀錄。*"))}<div class="section-title">${isZh ? "待完成要求" : "Pending requirements"}</div>${list(pendingItems, copy("No pending requirements.", "沒有待完成要求。"))}<div class="section-title">${isZh ? "病歷及行政摘要" : "Medical and administrative notes"}</div><p class="note-block">${escapeHtml(text(c.history.notes))}</p><div class="section-title">${isZh ? "審計追蹤" : "Audit trail"}</div>${auditTrail(c)}`;
+  }
+  if (state.modal.type === "agent") {
+    title = copy("Agent details", "代理資料");
+    eyebrow = copy("Shared by the booking integration*", "由預約整合層提供*");
+    body = `${field(copy("Agent code", "代理編號"), c.agent.code)}${field(copy("Agent name", "代理姓名"), c.agent.name)}${field(copy("Agent phone", "代理電話"), c.agent.phone)}${field(copy("Agent contact", "代理聯絡方式"), c.agent.contact)}${field(copy("Agent remarks", "代理備註"), c.agent.remarks)}<p class="footnote">${isZh ? "* 模擬資料。代理不會進入診所 CMS 工作台。" : "* Synthetic data. The agent does not enter the clinic CMS workspace."}</p>`;
+  }
+  if (state.modal.type === "edit-applicant") {
+    title = copy("Edit applicant details", "編輯申請人資料");
+    eyebrow = copy("Clinic Admin update · audited", "診所行政更新 · 已記錄");
+    body = `<div class="form-grid form-grid--two"><label class="form-field"><span>${isZh ? "申請人姓名" : "Applicant name"}</span><input data-field="edit.applicant" value="${escapeHtml(c.applicant)}"></label><label class="form-field"><span>${isZh ? "年齡" : "Age"}</span><input data-field="edit.age" type="number" min="18" max="99" value="${c.age}"></label><label class="form-field"><span>${isZh ? "性別" : "Sex"}</span><select data-field="edit.sex"><option value="Female" ${text(c.sex) === "Female" || text(c.sex) === "女" ? "selected" : ""}>${isZh ? "女" : "Female"}</option><option value="Male" ${text(c.sex) === "Male" || text(c.sex) === "男" ? "selected" : ""}>${isZh ? "男" : "Male"}</option></select></label><label class="form-field"><span>${isZh ? "檢查項目" : "Examination"}</span><input data-field="edit.examType" value="${escapeHtml(text(c.examType))}"></label></div><div class="action-bar action-bar--inside">${button(copy("Save applicant details", "儲存申請人資料"), "save-applicant", { primary: true })}</div>`;
+  }
+  if (state.modal.type === "upload-docs") {
+    title = copy("Supporting documents", "證明文件");
+    eyebrow = copy("Attach evidence and reports", "附加證據及報告");
+    const docs = c.documents.length ? `<ul class="record-list">${c.documents.map((doc) => `<li><strong>${escapeHtml(doc.name)}</strong> <span>${escapeHtml(text(doc.uploadedBy))} · ${escapeHtml(text(doc.at))}</span></li>`).join("")}</ul>` : `<p class="empty-note">${isZh ? "尚未上載文件。" : "No documents uploaded yet."}</p>`;
+    body = `${docs}<label class="form-field"><span>${isZh ? "選擇檔案" : "Choose files"}</span><input type="file" data-action="doc-file" multiple></label><p class="footnote">${isZh ? "* 檔案只記錄於此示範工作階段，不會上傳至伺服器。" : "* Files are only noted in this demo session and are not uploaded to a server."}</p>`;
+  }
+  if (state.modal.type === "reschedule") {
+    title = copy("Schedule / reschedule appointment", "預約／改期");
+    eyebrow = copy("Appointment management", "預約管理");
+    const slotUnion = [...new Set(doctors.flatMap((doc) => doc.slots))].sort();
+    body = `${field(copy("Current appointment", "目前預約"), `${c.appointment} · ${text(doctorById(c.doctorId).name)}`)}<div class="form-grid form-grid--two"><label class="form-field"><span>${isZh ? "新日期" : "New date"}</span><input type="date" data-field="re.date" value="${todayIso()}"></label><label class="form-field"><span>${isZh ? "新時間" : "New time"}</span><select data-field="re.time">${slotUnion.map((slot) => `<option value="${slot}" ${slot === c.appointment ? "selected" : ""}>${slot}</option>`).join("")}</select></label><label class="form-field"><span>${isZh ? "醫生" : "Doctor"}</span><select data-field="re.doctor">${doctors.map((doc) => `<option value="${doc.id}" ${doc.id === c.doctorId ? "selected" : ""}>${escapeHtml(text(doc.name))} · ${escapeHtml(text(doc.clinic))}</option>`).join("")}</select></label></div><div class="action-bar action-bar--inside">${button(copy("Confirm appointment", "確認預約"), "save-reschedule", { primary: true })}</div>`;
+  }
+  if (state.modal.type === "pending-labs") {
+    title = copy("Pending lab results", "待完成化驗結果");
+    eyebrow = copy("Outstanding investigations across cases", "所有個案的未完成檢驗");
+    const items = Object.values(state.cases).flatMap((item) => {
+      const labs = item.labs.filter((lab) => lab.state === "missing").map((lab) => ({ item, label: lab.label, kind: copy("Laboratory result", "化驗結果") }));
+      const followUps = item.followUp.required ? [{ item, label: copy(`Follow-up · ${text(item.followUp.status)}`, `跟進 · ${text(item.followUp.status)}`), kind: copy("Patient follow-up", "病人跟進") }] : [];
+      return [...labs, ...followUps];
+    });
+    body = items.length ? `<div class="availability-list">${items.map(({ item, label, kind }) => `<div class="availability-item"><div><strong>${escapeHtml(item.applicant)}</strong><span>${item.caseId} · ${escapeHtml(text(kind))}</span></div>${status(label, "warning")}</div>`).join("")}</div>` : `<p class="empty-note">${isZh ? "沒有待完成化驗結果。" : "No pending lab results."}</p>`;
+  }
+  if (state.modal.type === "pending-tasks") {
+    title = copy("Pending tasks", "待辦任務");
+    eyebrow = copy("Nurse worklist summary", "護士工作清單摘要");
+    const tasks = Object.values(state.cases).flatMap((item) => {
+      const list = [];
+      if (item.followUpRequested && item.missingEvidence.length) list.push({ item, label: copy("Attach requested lab results", "附加所要求的化驗結果") });
+      else if (item.missingEvidence.length) list.push({ item, label: copy("Laboratory evidence pending", "化驗證據待完成") });
+      if (item.adminBlockers.length) list.push({ item, label: copy("Waiting for Clinic Admin readiness", "等候診所行政完成準備") });
+      if (item.nurseReady && !item.screeningComplete && !item.adminBlockers.length) list.push({ item, label: copy("Screening not started", "尚未開始篩查") });
+      return list;
+    });
+    body = tasks.length ? `<div class="availability-list">${tasks.map(({ item, label }) => `<div class="availability-item"><div><strong>${escapeHtml(item.applicant)}</strong><span>${item.caseId} · ${item.appointment}</span></div>${status(label, "warning")}</div>`).join("")}</div>` : `<p class="empty-note">${isZh ? "沒有待辦任務。" : "No pending tasks."}</p>`;
+  }
+  if (state.modal.type === "uwreport") {
+    title = copy("Underwriting Report", "核保報告");
+    eyebrow = copy("Consolidated report preview · synthetic*", "綜合報告預覽 · 模擬*");
+    const labRows = c.labs.map((lab) => `<tr><td>${escapeHtml(text(lab.label))}</td><td>${escapeHtml(text(lab.value))}</td><td>${escapeHtml(text(lab.source))}</td></tr>`).join("");
+    const vitalRows = [[copy("Height / weight", "身高／體重"), c.vitals.heightWeight], [copy("BMI", "體重指數"), c.vitals.bmi], [copy("Blood pressure", "血壓"), c.vitals.bloodPressure], [copy("Pulse", "脈搏"), c.vitals.pulse], [copy("Urine test", "尿液檢查"), c.vitals.urine], [copy("Electrocardiogram", "心電圖"), c.vitals.ecg]].map(([label, value]) => `<tr><td>${escapeHtml(text(label))}</td><td>${escapeHtml(text(value))}</td></tr>`).join("");
+    const findingRows = Object.entries(c.findings).map(([key, value]) => `<tr><td>${escapeHtml(key.replaceAll(/([A-Z])/g, " $1"))}</td><td>${escapeHtml(text(value))}</td></tr>`).join("");
+    body = `<div class="uw-report"><header class="uw-report__header"><div><strong>PHKL Future Clinic CMS</strong><span>${isZh ? "核保審閱綜合報告 · 模擬資料*" : "Consolidated report for underwriting review · synthetic data*"}</span></div><span>${dayLabel(todayIso(), isZh)}</span></header><section><h3>${isZh ? "病人資料" : "Patient details"}</h3><table class="uw-table"><tbody><tr><td>${isZh ? "姓名" : "Name"}</td><td>${escapeHtml(c.applicant)}</td><td>${isZh ? "申請編號" : "Application"}</td><td>${c.caseId}</td></tr><tr><td>${isZh ? "年齡／性別" : "Age / sex"}</td><td>${escapeHtml(text(c.ageSex))}</td><td>${isZh ? "檢查項目" : "Examination"}</td><td>${escapeHtml(text(c.examType))}</td></tr><tr><td>${isZh ? "申請產品" : "Product sought"}</td><td>${escapeHtml(text(c.product))}</td><td>${isZh ? "保額級別" : "Sum assured band"}</td><td>${escapeHtml(text(c.sumBand))}</td></tr><tr><td>${isZh ? "代理" : "Agent"}</td><td>${escapeHtml(c.agent.name)} (${c.agent.code})</td><td>${isZh ? "主診醫生" : "Examining doctor"}</td><td>${escapeHtml(text(doctorById(c.doctorId).name))}</td></tr></tbody></table></section><section><h3>${isZh ? "檢查結果" : "Examination results"}</h3><table class="uw-table"><tbody>${vitalRows}</tbody></table></section><section><h3>${isZh ? "醫生檢查記錄" : "Clinical findings"}</h3><table class="uw-table"><tbody>${findingRows}</tbody></table></section><section><h3>${isZh ? "化驗結果" : "Test outcomes"}</h3><table class="uw-table"><tbody>${labRows}</tbody></table></section><section><h3>${isZh ? "臨床備註" : "Clinical notes"}</h3><p>${escapeHtml(text(c.findings.remarks))}</p>${c.supplementary.info ? `<p>${escapeHtml(c.supplementary.info)}</p>` : ""}${c.supplementary.tests ? `<p>${isZh ? "補充檢查：" : "Supplementary tests: "}${escapeHtml(c.supplementary.tests)}</p>` : ""}</section><section><h3>${isZh ? "簽署" : "Sign-off"}</h3><p>Dr H. Pang · M12874* · ${c.reportSigned ? (isZh ? "已簽署並提交 PHKL" : "Signed and submitted to PHKL") : (isZh ? "待簽署" : "Pending sign-off")}</p></section><footer class="uw-report__footer">${isZh ? "* 所有姓名、編號、醫療資料及結果均為模擬資料。" : "* All names, IDs, medical data and outcomes are synthetic."}</footer></div><div class="action-bar"><button type="button" class="button button--primary" data-action="print-uw">${isZh ? "列印／儲存為 PDF" : "Print / save as PDF"}</button></div>`;
+  }
+  const modalSize = state.modal.type === "uwreport" || state.modal.type === "profile" ? "modal--wide" : "modal--medium";
+  return `<div class="modal-backdrop" data-action="close-modal"><section class="modal ${modalSize}" role="dialog" aria-modal="true" aria-label="${escapeHtml(text(title))}" data-modal-panel><header class="modal__header"><div><span class="eyebrow">${escapeHtml(text(eyebrow))}</span><h2>${escapeHtml(text(title))}</h2></div>${button(copy("Close", "關閉"), "close-modal", { quiet: true })}</header><div class="modal__body">${body}</div></section></div>`;
 }
 
 function render() {
@@ -843,6 +1211,73 @@ root.addEventListener("click", (event) => {
       addAudit(c, copy("Dr H. Pang", "H. Pang 醫生"), copy("Digital package submitted", "電子套件已提交"), copy("Signed report and laboratory evidence sent to the PHKL review platform.", "已簽署報告及化驗證據已提交至 PHKL 審核平台。"));
     }
   }
+  if (action === "filter-preset") {
+    const preset = target.dataset.preset;
+    const today = todayIso();
+    state.filter.preset = preset;
+    if (preset === "today") { state.filter.from = today; state.filter.to = today; }
+    if (preset === "yesterday") { state.filter.from = shiftIso(today, -1); state.filter.to = shiftIso(today, -1); }
+    if (preset === "last7") { state.filter.from = shiftIso(today, -6); state.filter.to = today; }
+    if (preset === "last30") { state.filter.from = shiftIso(today, -29); state.filter.to = today; }
+  }
+  if (action === "calendar-prev" || action === "calendar-next") {
+    const [y, m] = state.calendarCursor.split("-").map(Number);
+    const d = new Date(y, m - 1 + (action === "calendar-next" ? 1 : -1), 1);
+    state.calendarCursor = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+  }
+  if (action === "calendar-day") {
+    state.calendarDay = target.dataset.date;
+    state.availabilityDate = target.dataset.date;
+  }
+  if (action === "open-calendar") navigate("clinic", "C03");
+  if (action === "open-doctor-calendar") navigate("doctor", "D05");
+  if (action === "view-profile") state.modal = { type: "profile", caseKey };
+  if (action === "view-agent") state.modal = { type: "agent", caseKey };
+  if (action === "edit-applicant") state.modal = { type: "edit-applicant", caseKey };
+  if (action === "upload-docs") state.modal = { type: "upload-docs", caseKey };
+  if (action === "reschedule") state.modal = { type: "reschedule", caseKey };
+  if (action === "pending-labs") state.modal = { type: "pending-labs", caseKey };
+  if (action === "pending-tasks") state.modal = { type: "pending-tasks", caseKey };
+  if (action === "uw-report") state.modal = { type: "uwreport", caseKey };
+  if (action === "print-uw") { window.print(); return; }
+  if (action === "save-applicant") {
+    const mc = state.cases[state.modal?.caseKey || state.selectedCase];
+    const read = (sel) => document.querySelector(`[data-field="${sel}"]`)?.value ?? "";
+    mc.applicant = read("edit.applicant") || mc.applicant;
+    mc.age = Number(read("edit.age")) || mc.age;
+    const sexVal = read("edit.sex");
+    mc.sex = copy("Female", "女").en === sexVal || sexVal === "Female" ? copy("Female", "女") : copy("Male", "男");
+    mc.examType = read("edit.examType") || mc.examType;
+    mc.ageSex = copy(`${mc.age} · ${mc.sex.en}`, `${mc.age} 歲 · ${mc.sex.zh}`);
+    addAudit(mc, copy("Clinic Admin", "診所行政人員"), copy("Applicant details updated", "申請人資料已更新"), copy("Name, age, sex or examination was amended by Clinic Admin.", "診所行政人員已修改姓名、年齡、性別或檢查項目。"));
+    state.modal = null;
+  }
+  if (action === "save-reschedule") {
+    const mc = state.cases[state.modal?.caseKey || state.selectedCase];
+    const read = (sel) => document.querySelector(`[data-field="${sel}"]`)?.value ?? "";
+    const newTime = read("re.time");
+    const newDate = read("re.date");
+    const newDoctor = read("re.doctor");
+    if (newTime) mc.appointment = newTime;
+    if (newDoctor) mc.doctorId = newDoctor;
+    addAudit(mc, copy("Clinic Admin", "診所行政人員"), copy("Appointment rescheduled", "預約已改期"), copy(`New slot ${newDate || "date pending"} ${newTime} with ${text(doctorById(mc.doctorId).name)}.`, `新時段 ${newDate || "日期待定"} ${newTime}，醫生：${text(doctorById(mc.doctorId).name)}。`));
+    state.modal = null;
+  }
+  if (action === "save-supplementary") {
+    const read = (sel) => document.querySelector(`[data-field="${sel}"]`)?.value ?? "";
+    c.supplementary.info = read("supplementary.info");
+    c.supplementary.tests = read("supplementary.tests");
+    addAudit(c, copy("Dr H. Pang", "H. Pang 醫生"), copy("Supplementary details saved", "補充資料已儲存"), copy("Additional customer information and supplementary tests were recorded.", "已記錄補充客戶資料及補充檢查項目。"));
+  }
+  if (action === "save-followup") {
+    const read = (sel) => document.querySelector(`[data-field="${sel}"]`)?.value ?? "";
+    c.followUp.required = read("followUp.required") === "yes";
+    c.followUp.owner = read("followUp.owner") || c.followUp.owner;
+    c.followUp.dueDate = read("followUp.dueDate");
+    c.followUp.status = read("followUp.status") || c.followUp.status;
+    c.followUp.notes = read("followUp.notes");
+    addAudit(c, copy("Dr H. Pang", "H. Pang 醫生"), copy("Follow-up details saved", "跟進資料已儲存"), copy("Follow-up owner, due date, status and notes were updated.", "已更新跟進負責人、到期日、狀態及備註。"));
+  }
   if (action === "view-record") state.modal = { type: "record", caseKey };
   if (action === "view-blocker") state.modal = { type: "blocker", caseKey };
   if (action === "view-evidence") state.modal = { type: "evidence", caseKey };
@@ -857,10 +1292,48 @@ root.addEventListener("click", (event) => {
 });
 
 root.addEventListener("change", (event) => {
-  if (event.target.dataset.action === "select-case") {
+  const action = event.target.dataset.action;
+  if (action === "select-case") {
     state.selectedCase = event.target.value;
     render();
   }
+  if (action === "filter-from" || action === "filter-to") {
+    state.filter.preset = "custom";
+    if (action === "filter-from") state.filter.from = event.target.value || state.filter.from;
+    if (action === "filter-to") state.filter.to = event.target.value || state.filter.to;
+    render();
+  }
+  if (action === "availability-date") {
+    state.availabilityDate = event.target.value || state.availabilityDate;
+    state.calendarDay = state.availabilityDate;
+    state.calendarCursor = state.availabilityDate.slice(0, 7);
+    render();
+  }
+  if (action === "nurse-filter") {
+    state.nurseFilter = event.target.value;
+    render();
+  }
+  if (action === "doc-file") {
+    const mc = state.cases[state.modal?.caseKey || state.selectedCase];
+    const files = Array.from(event.target.files || []);
+    files.forEach((file) => mc.documents.push({ name: `${file.name}*`, uploadedBy: copy("Clinic Admin", "診所行政人員"), at: copy("Demo now*", "示範當下*") }));
+    if (files.length) addAudit(mc, copy("Clinic Admin", "診所行政人員"), copy("Supporting documents attached", "已附加證明文件"), copy(`${files.length} file(s) noted on the case record.*`, `個案紀錄已記錄 ${files.length} 個檔案。*`));
+    render();
+  }
+});
+
+root.addEventListener("input", (event) => {
+  if (event.target.dataset.action !== "nurse-search") return;
+  const pos = event.target.selectionStart;
+  state.nurseSearch = event.target.value;
+  render();
+  requestAnimationFrame(() => {
+    const el = document.querySelector('[data-action="nurse-search"]');
+    if (el) {
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    }
+  });
 });
 
 root.addEventListener("click", (event) => {

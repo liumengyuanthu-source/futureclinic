@@ -30,4 +30,15 @@ The Scenario Studio now keeps four distinct layers:
 
 The HTML entry point is `index.html`. For full local interaction, serve this folder through a local static web server and open the resulting local URL.
 
+Frontend enhancements from the 4 Aug 2026 feedback round:
+
+- Every role (Clinic Admin, Nurse / Clinical Assistant, Doctor) lands on a dashboard view
+- The readiness worklist includes Doctor Name, Sex and Age columns
+- Date and date-range filters (Today, Yesterday, Last 7 days, Last 30 days, custom) drive the dashboard metrics and worklist
+- Clinic Admin C03 and Doctor D05 provide a calendar view plus a date picker that lists the doctors available on the selected day
+- Doctor D02 captures supplementary customer information, agent fields, booking remarks and patient follow-up details, opens the patient profile and history view, and generates a consolidated Underwriting Report preview with print / save-as-PDF
+- Clinic Admin C02 case actions: edit applicant details, view patient profile, view agent details, upload supporting documents, schedule / reschedule appointment, view calendar and view pending lab results
+- Nurse N01 is a dashboard worklist with Patient Name, Appointment Time, Examination Package, Status and Missing Requirement columns, status and search filters, and Start Screening, View Patient Record and View Pending Tasks actions
+- Appointments outside the three interactive demo cases are deterministically generated synthetic schedule data
+
 All data, names, IDs, outcomes and metrics are synthetic unless otherwise stated.
