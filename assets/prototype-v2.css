@@ -1227,6 +1227,19 @@ a:focus-visible {
   font-size: 12px;
 }
 
+.visit-block {
+  margin: 0 0 14px;
+}
+
+.visit-block > strong {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.visit-block .record-list {
+  margin-bottom: 0;
+}
+
 .note-block {
   margin: 0;
   padding: 12px 14px;

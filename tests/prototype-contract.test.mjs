@@ -71,9 +71,21 @@ test("ships the 04 Aug 2026 frontend enhancements", () => {
     "View Pending Tasks",
     "Edit applicant details",
     "Last 7 days",
+    "Tomorrow",
+    "Share with credential for underwriting",
+    "Shared with credential for underwriting",
+    "view-appt",
+    "visit-block",
   ]) {
     assert.ok(app.includes(label), `missing enhancement: ${label}`);
   }
+});
+
+test("keeps agent details out of the doctor examination view", () => {
+  const extras = app.match(/function doctorExamExtras[\s\S]*?\nfunction /);
+  assert.ok(extras, "doctorExamExtras not found");
+  assert.ok(!extras[0].includes("Agent details"), "agent panel must stay admin-only");
+  assert.ok(extras[0].includes("Booking remarks"), "booking remarks panel missing");
 });
 
 test("keeps signing guarded by evidence readiness", () => {

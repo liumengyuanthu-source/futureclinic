@@ -178,7 +178,9 @@ function demoAppointment(c) {
 
 function dayAppointments(iso) {
   const list = generatedAppointments(iso);
-  if (iso === todayIso()) Object.values(state.cases).forEach((c) => list.push(demoAppointment(c)));
+  Object.values(state.cases).forEach((c) => {
+    if ((c.date || todayIso()) === iso) list.push(demoAppointment(c));
+  });
   return list.sort((a, b) => (a.time < b.time ? -1 : 1));
 }
 
@@ -221,6 +223,7 @@ const initialCases = {
     caseId: "APP-2026-04418",
     applicant: "Wong Mei Ling",
     appointment: "09:20",
+    date: todayIso(),
     doctorId: "DR-PANG",
     sex: copy("Female", "女"),
     age: 41,
@@ -235,7 +238,16 @@ const initialCases = {
     followUp: { required: false, owner: copy("Nurse K. Tsang", "護士 K. Tsang"), dueDate: "", status: copy("Not required", "無需跟進"), notes: "" },
     documents: [{ name: "health-questionnaire.pdf*", uploadedBy: copy("PruForce integration*", "PruForce 整合層*"), at: "27 Jul 2026*" }],
     history: {
-      visits: [copy("12 Mar 2025 · Current Health Assessment · completed*", "2025 年 3 月 12 日 · 現行健康評估 · 已完成*")],
+      visits: [{
+        title: copy("12 Mar 2025 · Current Health Assessment · completed*", "2025 年 3 月 12 日 · 現行健康評估 · 已完成*"),
+        log: [
+          copy("09:05 · Checked in and identity confirmed*", "09:05 · 已到場並完成身份核對*"),
+          copy("09:20 · Screening and vitals recorded*", "09:20 · 已記錄篩查及生命體徵*"),
+          copy("09:45 · Laboratory samples collected*", "09:45 · 已採集化驗樣本*"),
+          copy("10:10 · Doctor examination completed*", "10:10 · 醫生檢查已完成*"),
+          copy("10:30 · Report signed and sent to PHKL*", "10:30 · 報告已簽署並發送至 PHKL*"),
+        ],
+      }],
       completedTests: [copy("Lipids, HbA1c and urinalysis (Mar 2025)*", "血脂、糖化血紅素及尿液分析（2025 年 3 月）*")],
       pending: [],
       notes: copy("No adverse findings in the previous assessment.*", "上一次評估沒有異常發現。*"),
@@ -283,6 +295,7 @@ const initialCases = {
     caseId: "APP-2026-04419",
     applicant: "Leung Chi Ho",
     appointment: "09:40",
+    date: todayIso(),
     doctorId: "DR-PANG",
     sex: copy("Male", "男"),
     age: 46,
@@ -297,7 +310,15 @@ const initialCases = {
     followUp: { required: true, owner: copy("Nurse K. Tsang", "護士 K. Tsang"), dueDate: shiftIso(todayIso(), 7), status: copy("Open", "未完成"), notes: "Attach Lipids and HbA1c results before report sign-off.*" },
     documents: [{ name: "health-questionnaire.pdf*", uploadedBy: copy("PruForce integration*", "PruForce 整合層*"), at: "27 Jul 2026*" }],
     history: {
-      visits: [copy("20 Sep 2024 · Current Health Assessment · completed*", "2024 年 9 月 20 日 · 現行健康評估 · 已完成*")],
+      visits: [{
+        title: copy("20 Sep 2024 · Current Health Assessment · completed*", "2024 年 9 月 20 日 · 現行健康評估 · 已完成*"),
+        log: [
+          copy("09:10 · Checked in and consent confirmed*", "09:10 · 已到場並確認同意書*"),
+          copy("09:25 · Vitals recorded, borderline blood pressure noted*", "09:25 · 已記錄生命體徵，血壓處於臨界水平*"),
+          copy("09:50 · Laboratory samples collected*", "09:50 · 已採集化驗樣本*"),
+          copy("10:15 · Doctor examination completed, recheck advised*", "10:15 · 醫生檢查已完成，建議重新量度*"),
+        ],
+      }],
       completedTests: [copy("Lipids and resting ECG (Sep 2024)*", "血脂及靜態心電圖（2024 年 9 月）*")],
       pending: [copy("Lipids and HbA1c (current visit)*", "血脂及糖化血紅素（本次到訪）*")],
       notes: copy("Borderline blood pressure recorded in 2024. Recheck advised.*", "2024 年記錄血壓處於臨界水平，建議重新量度。*"),
@@ -345,6 +366,7 @@ const initialCases = {
     caseId: "APP-2026-04421",
     applicant: "Ho Wing Yan",
     appointment: "10:20",
+    date: todayIso(),
     doctorId: "DR-LI",
     sex: copy("Female", "女"),
     age: 38,
@@ -690,6 +712,7 @@ function renderShell(content) {
 function presetLabel(preset) {
   const labels = {
     today: copy("Today", "今天"),
+    tomorrow: copy("Tomorrow", "明天"),
     yesterday: copy("Yesterday", "昨天"),
     last7: copy("Last 7 days", "最近 7 天"),
     last30: copy("Last 30 days", "最近 30 天"),
@@ -700,7 +723,7 @@ function presetLabel(preset) {
 
 function filterBar() {
   const isZh = state.locale === "zh";
-  const presets = ["today", "yesterday", "last7", "last30"]
+  const presets = ["today", "tomorrow", "yesterday", "last7", "last30"]
     .map((p) => `<button type="button" class="chip ${state.filter.preset === p ? "is-active" : ""}" data-action="filter-preset" data-preset="${p}">${escapeHtml(text(presetLabel(p)))}</button>`)
     .join("");
   return `<div class="filter-bar"><div class="filter-bar__presets"><span>${isZh ? "時段" : "Period"}</span>${presets}</div><div class="filter-bar__range"><label><span>${isZh ? "由" : "From"}</span><input type="date" data-action="filter-from" value="${state.filter.from}"></label><label><span>${isZh ? "至" : "To"}</span><input type="date" data-action="filter-to" value="${state.filter.to}"></label></div></div>`;
@@ -770,12 +793,14 @@ function calendarGrid(cursorYm, selectedIso) {
   return `<div class="calendar-weekdays">${weekdayNames.map((w) => `<span>${w}</span>`).join("")}</div><div class="calendar-grid">${cells.join("")}</div>`;
 }
 
-function agendaList(appts, showOpen) {
+function agendaList(appts, showOpen, iso) {
   const isZh = state.locale === "zh";
   if (!appts.length) return `<p class="empty-note">${isZh ? "當天沒有預約。" : "No appointments on this day."}</p>`;
   return appts.map((a) => {
     const meta = entryStatusMeta(a);
-    const openBtn = showOpen && a.caseKey ? button(copy("Open case", "開啟個案"), "open-case", { caseKey: a.caseKey, quiet: true }) : "";
+    const openBtn = a.caseKey
+      ? (showOpen ? button(copy("Open case", "開啟個案"), "open-case", { caseKey: a.caseKey, quiet: true }) : "")
+      : `<button type="button" class="button button--quiet" data-action="view-appt" data-date="${iso}" data-time="${a.time}" data-ref="${a.ref}">${isZh ? "詳情" : "Details"}</button>`;
     return `<div class="agenda-item"><span class="mono">${a.time}</span><div><strong>${escapeHtml(a.applicant)}</strong><span>${escapeHtml(text(doctorById(a.doctorId).name))} · ${escapeHtml(text(a.examType))}</span></div>${status(meta.label, meta.tone)}${openBtn}</div>`;
   }).join("");
 }
@@ -789,13 +814,13 @@ function availabilityPanel(iso) {
 
 function clinicCalendar() {
   const isZh = state.locale === "zh";
-  return `<div class="page-heading"><div><span class="eyebrow">C03 · ${isZh ? "日曆" : "CALENDAR"}</span><h1>${isZh ? "預約日曆及資源規劃" : "Appointment calendar and resource planning"}</h1><p>${isZh ? "按月查看預約分佈，選擇日期查看議程及可約醫生。" : "Review monthly appointment spread, then open a day for its agenda and available doctors."}</p></div>${status(copy("Synthetic schedule*", "模擬排程*"), "info")}</div><div class="calendar-layout">${panel(copy("Appointment calendar", "預約日曆"), `<div class="calendar-toolbar">${button(copy("Previous month", "上一個月"), "calendar-prev", { quiet: true })}<strong>${monthLabel(state.calendarCursor, isZh)}</strong>${button(copy("Next month", "下一個月"), "calendar-next", { quiet: true })}</div>${calendarGrid(state.calendarCursor, state.calendarDay)}`, copy("Select a day to open its agenda", "選擇日期以查看議程"))}<div class="calendar-side">${panel(copy(`${"Day agenda"} · ${dayLabel(state.calendarDay, false)}`, `${"當日議程"} · ${dayLabel(state.calendarDay, true)}`), agendaList(dayAppointments(state.calendarDay), true))}${panel(copy("Doctor availability", "醫生可約狀態"), `<label class="form-field"><span>${isZh ? "選擇日期" : "Select date"}</span><input type="date" data-action="availability-date" value="${state.availabilityDate}"></label>${availabilityPanel(state.availabilityDate)}`, copy("Select a date to view available doctors", "選擇日期以查看可約醫生"))}</div></div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">C03 · ${isZh ? "日曆" : "CALENDAR"}</span><h1>${isZh ? "預約日曆及資源規劃" : "Appointment calendar and resource planning"}</h1><p>${isZh ? "按月查看預約分佈，選擇日期查看議程及可約醫生。" : "Review monthly appointment spread, then open a day for its agenda and available doctors."}</p></div>${status(copy("Synthetic schedule*", "模擬排程*"), "info")}</div><div class="calendar-layout">${panel(copy("Appointment calendar", "預約日曆"), `<div class="calendar-toolbar">${button(copy("Previous month", "上一個月"), "calendar-prev", { quiet: true })}<strong>${monthLabel(state.calendarCursor, isZh)}</strong>${button(copy("Next month", "下一個月"), "calendar-next", { quiet: true })}</div>${calendarGrid(state.calendarCursor, state.calendarDay)}`, copy("Select a day to open its agenda", "選擇日期以查看議程"))}<div class="calendar-side">${panel(copy(`${"Day agenda"} · ${dayLabel(state.calendarDay, false)}`, `${"當日議程"} · ${dayLabel(state.calendarDay, true)}`), agendaList(dayAppointments(state.calendarDay), true, state.calendarDay))}${panel(copy("Doctor availability", "醫生可約狀態"), `<label class="form-field"><span>${isZh ? "選擇日期" : "Select date"}</span><input type="date" data-action="availability-date" value="${state.availabilityDate}"></label>${availabilityPanel(state.availabilityDate)}`, copy("Select a date to view available doctors", "選擇日期以查看可約醫生"))}</div></div>`;
 }
 
 function doctorCalendar() {
   const isZh = state.locale === "zh";
   const mine = dayAppointments(state.availabilityDate).filter((a) => a.doctorId === "DR-PANG");
-  return `<div class="page-heading"><div><span class="eyebrow">D05 · ${isZh ? "日曆" : "CALENDAR"}</span><h1>${isZh ? "醫生日曆及可約狀態" : "Doctor calendar and availability"}</h1><p>${isZh ? "選擇日期查看我的診症安排，以及當天可約的醫生。" : "Select a date to review my schedule and the doctors available that day."}</p></div>${status(copy("Dr H. Pang · Tsim Sha Tsui", "H. Pang 醫生 · 尖沙咀"), "info")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy(`My schedule · ${dayLabel(state.availabilityDate, false)}`, `我的安排 · ${dayLabel(state.availabilityDate, true)}`), `<label class="form-field"><span>${isZh ? "選擇日期" : "Select date"}</span><input type="date" data-action="availability-date" value="${state.availabilityDate}"></label>${agendaList(mine, false)}`)}${panel(copy("Available doctors on this date", "當天可約醫生"), availabilityPanel(state.availabilityDate), copy("Calendar button: pick a date, see who is available", "日曆按鈕：選擇日期，查看可約醫生"))}</div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">D05 · ${isZh ? "日曆" : "CALENDAR"}</span><h1>${isZh ? "醫生日曆及可約狀態" : "Doctor calendar and availability"}</h1><p>${isZh ? "選擇日期查看我的診症安排，以及當天可約的醫生。" : "Select a date to review my schedule and the doctors available that day."}</p></div>${status(copy("Dr H. Pang · Tsim Sha Tsui", "H. Pang 醫生 · 尖沙咀"), "info")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy(`My schedule · ${dayLabel(state.availabilityDate, false)}`, `我的安排 · ${dayLabel(state.availabilityDate, true)}`), `<label class="form-field"><span>${isZh ? "選擇日期" : "Select date"}</span><input type="date" data-action="availability-date" value="${state.availabilityDate}"></label>${agendaList(mine, false, state.availabilityDate)}`)}${panel(copy("Available doctors on this date", "當天可約醫生"), availabilityPanel(state.availabilityDate), copy("Calendar button: pick a date, see who is available", "日曆按鈕：選擇日期，查看可約醫生"))}</div>`;
 }
 
 function nurseWorklist() {
@@ -913,7 +938,7 @@ function doctorExam() {
 
 function doctorExamExtras(c) {
   const isZh = state.locale === "zh";
-  return `<div class="three-column doctor-layout">${panel(copy("Agent details", "代理資料"), `${field(copy("Agent code", "代理編號"), c.agent.code)}${field(copy("Agent name", "代理姓名"), c.agent.name)}${field(copy("Agent phone", "代理電話"), c.agent.phone)}${field(copy("Agent contact", "代理聯絡方式"), c.agent.contact)}${field(copy("Agent remarks", "代理備註"), c.agent.remarks)}`, copy("Shared by the booking integration*", "由預約整合層提供*"))}${panel(copy("Booking remarks", "預約備註"), `<p class="note-block">${escapeHtml(text(c.bookingRemarks))}</p>`, copy("Context captured before the patient visit", "病人到訪前記錄的上下文"))}${panel(copy("Patient record follow-up", "病人紀錄跟進"), `<div class="form-grid form-grid--two"><label class="form-field"><span>${isZh ? "需要跟進" : "Follow-up required"}</span><select data-field="followUp.required"><option value="yes" ${c.followUp.required ? "selected" : ""}>${isZh ? "是" : "Yes"}</option><option value="no" ${c.followUp.required ? "" : "selected"}>${isZh ? "否" : "No"}</option></select></label><label class="form-field"><span>${isZh ? "跟進負責人" : "Follow-up owner"}</span><input data-field="followUp.owner" value="${escapeHtml(text(c.followUp.owner))}"></label><label class="form-field"><span>${isZh ? "到期日" : "Due date"}</span><input type="date" data-field="followUp.dueDate" value="${c.followUp.dueDate}"></label><label class="form-field"><span>${isZh ? "狀態" : "Status"}</span><input data-field="followUp.status" value="${escapeHtml(text(c.followUp.status))}"></label></div><label class="form-field"><span>${isZh ? "跟進備註" : "Follow-up notes"}</span><textarea rows="3" data-field="followUp.notes">${escapeHtml(c.followUp.notes)}</textarea></label><div class="action-bar action-bar--inside">${button(copy("Save follow-up", "儲存跟進"), "save-followup", { primary: true })}</div>`)}</div><div class="content-with-rail content-with-rail--wide">${panel(copy("Additional customer information", "補充客戶資料"), `<label class="form-field"><span>${isZh ? "補充資料" : "Supplementary information"}</span><textarea rows="3" data-field="supplementary.info" placeholder="${isZh ? "記錄檢查過程中發現的補充客戶資料" : "Capture additional customer information found during the process"}">${escapeHtml(c.supplementary.info)}</textarea></label><label class="form-field"><span>${isZh ? "補充檢查或評估" : "Supplementary tests or assessments"}</span><input data-field="supplementary.tests" value="${escapeHtml(c.supplementary.tests)}" placeholder="${isZh ? "例如：超聲波、額外血液檢查" : "e.g. ultrasound, additional blood tests"}"></label><div class="action-bar action-bar--inside">${button(copy("Save supplementary details", "儲存補充資料"), "save-supplementary", { primary: true })}</div>`, copy("Documented by the doctor during the process", "由醫生於檢查過程中記錄"))}${panel(copy("Patient profile and reports", "病人檔案及報告"), `<div class="action-stack">${button(copy("View patient profile", "查看病人檔案"), "view-profile", { full: true })}${button(copy("Generate Underwriting Report", "生成核保報告"), "uw-report", { full: true, primary: true })}</div>`, copy("History, evidence and consolidated PDF output", "病史、證據及綜合 PDF 輸出"))}</div>`;
+  return `<div class="three-column doctor-layout">${panel(copy("Booking remarks", "預約備註"), `<p class="note-block">${escapeHtml(text(c.bookingRemarks))}</p>`, copy("Context captured before the patient visit", "病人到訪前記錄的上下文"))}${panel(copy("Patient record follow-up", "病人紀錄跟進"), `<div class="form-grid form-grid--two"><label class="form-field"><span>${isZh ? "需要跟進" : "Follow-up required"}</span><select data-field="followUp.required"><option value="yes" ${c.followUp.required ? "selected" : ""}>${isZh ? "是" : "Yes"}</option><option value="no" ${c.followUp.required ? "" : "selected"}>${isZh ? "否" : "No"}</option></select></label><label class="form-field"><span>${isZh ? "跟進負責人" : "Follow-up owner"}</span><input data-field="followUp.owner" value="${escapeHtml(text(c.followUp.owner))}"></label><label class="form-field"><span>${isZh ? "到期日" : "Due date"}</span><input type="date" data-field="followUp.dueDate" value="${c.followUp.dueDate}"></label><label class="form-field"><span>${isZh ? "狀態" : "Status"}</span><input data-field="followUp.status" value="${escapeHtml(text(c.followUp.status))}"></label></div><label class="form-field"><span>${isZh ? "跟進備註" : "Follow-up notes"}</span><textarea rows="3" data-field="followUp.notes">${escapeHtml(c.followUp.notes)}</textarea></label><div class="action-bar action-bar--inside">${button(copy("Save follow-up", "儲存跟進"), "save-followup", { primary: true })}</div>`, "", "span-two")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy("Additional customer information", "補充客戶資料"), `<label class="form-field"><span>${isZh ? "補充資料" : "Supplementary information"}</span><textarea rows="3" data-field="supplementary.info" placeholder="${isZh ? "記錄檢查過程中發現的補充客戶資料" : "Capture additional customer information found during the process"}">${escapeHtml(c.supplementary.info)}</textarea></label><label class="form-field"><span>${isZh ? "補充檢查或評估" : "Supplementary tests or assessments"}</span><input data-field="supplementary.tests" value="${escapeHtml(c.supplementary.tests)}" placeholder="${isZh ? "例如：超聲波、額外血液檢查" : "e.g. ultrasound, additional blood tests"}"></label><div class="action-bar action-bar--inside">${button(copy("Save supplementary details", "儲存補充資料"), "save-supplementary", { primary: true })}</div>`, copy("Documented by the doctor during the process", "由醫生於檢查過程中記錄"))}${panel(copy("Patient profile and reports", "病人檔案及報告"), `<div class="action-stack">${button(copy("View patient profile", "查看病人檔案"), "view-profile", { full: true })}${button(copy("Generate Underwriting Report", "生成核保報告"), "uw-report", { full: true, primary: true })}</div>`, copy("History, evidence and consolidated PDF output", "病史、證據及綜合 PDF 輸出"))}</div>`;
 }
 
 function evidencePackage(c) {
@@ -1044,13 +1069,22 @@ function renderModal() {
     title = copy("Patient profile and history", "病人檔案及病史");
     eyebrow = copy("Consolidated synthetic record*", "綜合模擬紀錄*");
     const list = (items, emptyCopy) => items.length ? `<ul class="record-list">${items.map((item) => `<li>${escapeHtml(text(item))}</li>`).join("")}</ul>` : `<p class="empty-note">${escapeHtml(text(emptyCopy))}</p>`;
+    const visitBlocks = c.history.visits.length ? c.history.visits.map((visit) => `<div class="visit-block"><strong>${escapeHtml(text(visit.title))}</strong><ul class="record-list">${visit.log.map((entry) => `<li>${escapeHtml(text(entry))}</li>`).join("")}</ul></div>`).join("") : `<p class="empty-note">${isZh ? "沒有過往就診紀錄。*" : "No previous visits on record.*"}</p>`;
     const pendingItems = [...c.history.pending, ...c.missingEvidence.map((item) => copy(`${item} · laboratory result pending*`, `${item} · 化驗結果待完成*`))];
-    body = `${field(copy("Applicant", "申請人"), c.applicant)}${field(copy("Application", "申請編號"), c.caseId)}${field(copy("Age / sex", "年齡／性別"), c.ageSex)}${field(copy("Product sought*", "申請產品*"), c.product)}${field(copy("Current status", "目前狀態"), readiness(c).label)}<div class="section-title">${isZh ? "過往就診" : "Previous visits"}</div>${list(c.history.visits, copy("No previous visits on record.*", "沒有過往就診紀錄。*"))}<div class="section-title">${isZh ? "已完成檢查" : "Completed tests"}</div>${list(c.history.completedTests, copy("No completed tests on record.*", "沒有已完成檢查紀錄。*"))}<div class="section-title">${isZh ? "待完成要求" : "Pending requirements"}</div>${list(pendingItems, copy("No pending requirements.", "沒有待完成要求。"))}<div class="section-title">${isZh ? "病歷及行政摘要" : "Medical and administrative notes"}</div><p class="note-block">${escapeHtml(text(c.history.notes))}</p><div class="section-title">${isZh ? "審計追蹤" : "Audit trail"}</div>${auditTrail(c)}`;
+    body = `${field(copy("Applicant", "申請人"), c.applicant)}${field(copy("Application", "申請編號"), c.caseId)}${field(copy("Age / sex", "年齡／性別"), c.ageSex)}${field(copy("Product sought*", "申請產品*"), c.product)}${field(copy("Current status", "目前狀態"), readiness(c).label)}<div class="section-title">${isZh ? "過往就診" : "Previous visits"}</div>${visitBlocks}<div class="section-title">${isZh ? "已完成檢查" : "Completed tests"}</div>${list(c.history.completedTests, copy("No completed tests on record.*", "沒有已完成檢查紀錄。*"))}<div class="section-title">${isZh ? "待完成要求" : "Pending requirements"}</div>${list(pendingItems, copy("No pending requirements.", "沒有待完成要求。"))}<div class="section-title">${isZh ? "病歷及行政摘要" : "Medical and administrative notes"}</div><p class="note-block">${escapeHtml(text(c.history.notes))}</p><div class="section-title">${isZh ? "審計追蹤" : "Audit trail"}</div>${auditTrail(c)}`;
   }
   if (state.modal.type === "agent") {
     title = copy("Agent details", "代理資料");
     eyebrow = copy("Shared by the booking integration*", "由預約整合層提供*");
     body = `${field(copy("Agent code", "代理編號"), c.agent.code)}${field(copy("Agent name", "代理姓名"), c.agent.name)}${field(copy("Agent phone", "代理電話"), c.agent.phone)}${field(copy("Agent contact", "代理聯絡方式"), c.agent.contact)}${field(copy("Agent remarks", "代理備註"), c.agent.remarks)}<p class="footnote">${isZh ? "* 模擬資料。代理不會進入診所 CMS 工作台。" : "* Synthetic data. The agent does not enter the clinic CMS workspace."}</p>`;
+  }
+  if (state.modal.type === "appt") {
+    const a = state.modal.appt;
+    const doc = doctorById(a.doctorId);
+    const meta = entryStatusMeta(a);
+    title = copy("Appointment details", "預約詳情");
+    eyebrow = copy("Synthetic schedule entry · read-only*", "模擬排程項目 · 只讀*");
+    body = `${field(copy("Applicant", "申請人"), a.applicant)}${field(copy("Application", "申請編號"), a.ref)}${field(copy("Date", "日期"), dayLabel(state.modal.date, isZh))}${field(copy("Time", "時間"), a.time)}${field(copy("Doctor", "醫生"), `${text(doc.name)} · ${text(doc.specialty)} · ${text(doc.clinic)}`)}${field(copy("Examination", "檢查項目"), a.examType)}${field(copy("Sex", "性別"), a.sex)}${field(copy("Age", "年齡"), String(a.age))}${field(copy("Status", "狀態"), meta.label)}<p class="footnote">${isZh ? "* 模擬排程資料，只供查看，不能在此編輯。" : "* Synthetic schedule data, view only. It cannot be edited here."}</p>`;
   }
   if (state.modal.type === "edit-applicant") {
     title = copy("Edit applicant details", "編輯申請人資料");
@@ -1098,7 +1132,7 @@ function renderModal() {
     const labRows = c.labs.map((lab) => `<tr><td>${escapeHtml(text(lab.label))}</td><td>${escapeHtml(text(lab.value))}</td><td>${escapeHtml(text(lab.source))}</td></tr>`).join("");
     const vitalRows = [[copy("Height / weight", "身高／體重"), c.vitals.heightWeight], [copy("BMI", "體重指數"), c.vitals.bmi], [copy("Blood pressure", "血壓"), c.vitals.bloodPressure], [copy("Pulse", "脈搏"), c.vitals.pulse], [copy("Urine test", "尿液檢查"), c.vitals.urine], [copy("Electrocardiogram", "心電圖"), c.vitals.ecg]].map(([label, value]) => `<tr><td>${escapeHtml(text(label))}</td><td>${escapeHtml(text(value))}</td></tr>`).join("");
     const findingRows = Object.entries(c.findings).map(([key, value]) => `<tr><td>${escapeHtml(key.replaceAll(/([A-Z])/g, " $1"))}</td><td>${escapeHtml(text(value))}</td></tr>`).join("");
-    body = `<div class="uw-report"><header class="uw-report__header"><div><strong>PHKL Future Clinic CMS</strong><span>${isZh ? "核保審閱綜合報告 · 模擬資料*" : "Consolidated report for underwriting review · synthetic data*"}</span></div><span>${dayLabel(todayIso(), isZh)}</span></header><section><h3>${isZh ? "病人資料" : "Patient details"}</h3><table class="uw-table"><tbody><tr><td>${isZh ? "姓名" : "Name"}</td><td>${escapeHtml(c.applicant)}</td><td>${isZh ? "申請編號" : "Application"}</td><td>${c.caseId}</td></tr><tr><td>${isZh ? "年齡／性別" : "Age / sex"}</td><td>${escapeHtml(text(c.ageSex))}</td><td>${isZh ? "檢查項目" : "Examination"}</td><td>${escapeHtml(text(c.examType))}</td></tr><tr><td>${isZh ? "申請產品" : "Product sought"}</td><td>${escapeHtml(text(c.product))}</td><td>${isZh ? "保額級別" : "Sum assured band"}</td><td>${escapeHtml(text(c.sumBand))}</td></tr><tr><td>${isZh ? "代理" : "Agent"}</td><td>${escapeHtml(c.agent.name)} (${c.agent.code})</td><td>${isZh ? "主診醫生" : "Examining doctor"}</td><td>${escapeHtml(text(doctorById(c.doctorId).name))}</td></tr></tbody></table></section><section><h3>${isZh ? "檢查結果" : "Examination results"}</h3><table class="uw-table"><tbody>${vitalRows}</tbody></table></section><section><h3>${isZh ? "醫生檢查記錄" : "Clinical findings"}</h3><table class="uw-table"><tbody>${findingRows}</tbody></table></section><section><h3>${isZh ? "化驗結果" : "Test outcomes"}</h3><table class="uw-table"><tbody>${labRows}</tbody></table></section><section><h3>${isZh ? "臨床備註" : "Clinical notes"}</h3><p>${escapeHtml(text(c.findings.remarks))}</p>${c.supplementary.info ? `<p>${escapeHtml(c.supplementary.info)}</p>` : ""}${c.supplementary.tests ? `<p>${isZh ? "補充檢查：" : "Supplementary tests: "}${escapeHtml(c.supplementary.tests)}</p>` : ""}</section><section><h3>${isZh ? "簽署" : "Sign-off"}</h3><p>Dr H. Pang · M12874* · ${c.reportSigned ? (isZh ? "已簽署並提交 PHKL" : "Signed and submitted to PHKL") : (isZh ? "待簽署" : "Pending sign-off")}</p></section><footer class="uw-report__footer">${isZh ? "* 所有姓名、編號、醫療資料及結果均為模擬資料。" : "* All names, IDs, medical data and outcomes are synthetic."}</footer></div><div class="action-bar"><button type="button" class="button button--primary" data-action="print-uw">${isZh ? "列印／儲存為 PDF" : "Print / save as PDF"}</button></div>`;
+    body = `<div class="uw-report"><header class="uw-report__header"><div><strong>PHKL Future Clinic CMS</strong><span>${isZh ? "核保審閱綜合報告 · 模擬資料*" : "Consolidated report for underwriting review · synthetic data*"}</span></div><span>${dayLabel(todayIso(), isZh)}</span></header><section><h3>${isZh ? "病人資料" : "Patient details"}</h3><table class="uw-table"><tbody><tr><td>${isZh ? "姓名" : "Name"}</td><td>${escapeHtml(c.applicant)}</td><td>${isZh ? "申請編號" : "Application"}</td><td>${c.caseId}</td></tr><tr><td>${isZh ? "年齡／性別" : "Age / sex"}</td><td>${escapeHtml(text(c.ageSex))}</td><td>${isZh ? "檢查項目" : "Examination"}</td><td>${escapeHtml(text(c.examType))}</td></tr><tr><td>${isZh ? "申請產品" : "Product sought"}</td><td>${escapeHtml(text(c.product))}</td><td>${isZh ? "保額級別" : "Sum assured band"}</td><td>${escapeHtml(text(c.sumBand))}</td></tr><tr><td>${isZh ? "代理" : "Agent"}</td><td>${escapeHtml(c.agent.name)} (${c.agent.code})</td><td>${isZh ? "主診醫生" : "Examining doctor"}</td><td>${escapeHtml(text(doctorById(c.doctorId).name))}</td></tr></tbody></table></section><section><h3>${isZh ? "檢查結果" : "Examination results"}</h3><table class="uw-table"><tbody>${vitalRows}</tbody></table></section><section><h3>${isZh ? "醫生檢查記錄" : "Clinical findings"}</h3><table class="uw-table"><tbody>${findingRows}</tbody></table></section><section><h3>${isZh ? "化驗結果" : "Test outcomes"}</h3><table class="uw-table"><tbody>${labRows}</tbody></table></section><section><h3>${isZh ? "臨床備註" : "Clinical notes"}</h3><p>${escapeHtml(text(c.findings.remarks))}</p>${c.supplementary.info ? `<p>${escapeHtml(c.supplementary.info)}</p>` : ""}${c.supplementary.tests ? `<p>${isZh ? "補充檢查：" : "Supplementary tests: "}${escapeHtml(c.supplementary.tests)}</p>` : ""}</section><section><h3>${isZh ? "簽署" : "Sign-off"}</h3><p>Dr H. Pang · M12874* · ${c.reportSigned ? (isZh ? "已簽署並提交 PHKL" : "Signed and submitted to PHKL") : (isZh ? "待簽署" : "Pending sign-off")}</p></section><footer class="uw-report__footer">${isZh ? "* 所有姓名、編號、醫療資料及結果均為模擬資料。" : "* All names, IDs, medical data and outcomes are synthetic."}</footer></div><div class="action-bar"><button type="button" class="button button--primary" data-action="print-uw">${isZh ? "列印／儲存為 PDF" : "Print / save as PDF"}</button>${c.uwShared ? `<span class="status status--success">${isZh ? "已以憑證分享予核保團隊*" : "Shared with credential for underwriting*"}</span>` : `<button type="button" class="button" data-action="share-uw">${isZh ? "以憑證分享予核保團隊" : "Share with credential for underwriting"}</button>`}</div>`;
   }
   const modalSize = state.modal.type === "uwreport" || state.modal.type === "profile" ? "modal--wide" : "modal--medium";
   return `<div class="modal-backdrop" data-action="close-modal"><section class="modal ${modalSize}" role="dialog" aria-modal="true" aria-label="${escapeHtml(text(title))}" data-modal-panel><header class="modal__header"><div><span class="eyebrow">${escapeHtml(text(eyebrow))}</span><h2>${escapeHtml(text(title))}</h2></div>${button(copy("Close", "關閉"), "close-modal", { quiet: true })}</header><div class="modal__body">${body}</div></section></div>`;
@@ -1216,6 +1250,7 @@ root.addEventListener("click", (event) => {
     const today = todayIso();
     state.filter.preset = preset;
     if (preset === "today") { state.filter.from = today; state.filter.to = today; }
+    if (preset === "tomorrow") { state.filter.from = shiftIso(today, 1); state.filter.to = shiftIso(today, 1); }
     if (preset === "yesterday") { state.filter.from = shiftIso(today, -1); state.filter.to = shiftIso(today, -1); }
     if (preset === "last7") { state.filter.from = shiftIso(today, -6); state.filter.to = today; }
     if (preset === "last30") { state.filter.from = shiftIso(today, -29); state.filter.to = today; }
@@ -1238,8 +1273,17 @@ root.addEventListener("click", (event) => {
   if (action === "reschedule") state.modal = { type: "reschedule", caseKey };
   if (action === "pending-labs") state.modal = { type: "pending-labs", caseKey };
   if (action === "pending-tasks") state.modal = { type: "pending-tasks", caseKey };
+  if (action === "view-appt") {
+    const appt = dayAppointments(target.dataset.date).find((a) => a.time === target.dataset.time && a.ref === target.dataset.ref);
+    if (appt) state.modal = { type: "appt", appt, date: target.dataset.date };
+  }
   if (action === "uw-report") state.modal = { type: "uwreport", caseKey };
   if (action === "print-uw") { window.print(); return; }
+  if (action === "share-uw") {
+    const mc = state.cases[state.modal?.caseKey || state.selectedCase];
+    mc.uwShared = true;
+    addAudit(mc, copy("Dr H. Pang", "H. Pang 醫生"), copy("Report shared with underwriting", "報告已分享予核保團隊"), copy("Credentialed access granted to the PHKL underwriting team.*", "已向 PHKL 核保團隊授予憑證存取權。*"));
+  }
   if (action === "save-applicant") {
     const mc = state.cases[state.modal?.caseKey || state.selectedCase];
     const read = (sel) => document.querySelector(`[data-field="${sel}"]`)?.value ?? "";
@@ -1259,6 +1303,7 @@ root.addEventListener("click", (event) => {
     const newDate = read("re.date");
     const newDoctor = read("re.doctor");
     if (newTime) mc.appointment = newTime;
+    if (newDate) mc.date = newDate;
     if (newDoctor) mc.doctorId = newDoctor;
     addAudit(mc, copy("Clinic Admin", "診所行政人員"), copy("Appointment rescheduled", "預約已改期"), copy(`New slot ${newDate || "date pending"} ${newTime} with ${text(doctorById(mc.doctorId).name)}.`, `新時段 ${newDate || "日期待定"} ${newTime}，醫生：${text(doctorById(mc.doctorId).name)}。`));
     state.modal = null;
@@ -1293,6 +1338,7 @@ root.addEventListener("click", (event) => {
 
 root.addEventListener("change", (event) => {
   const action = event.target.dataset.action;
+  if (event.target.matches("select, input[type='date']")) event.target.blur();
   if (action === "select-case") {
     state.selectedCase = event.target.value;
     render();
