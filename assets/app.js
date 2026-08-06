@@ -1154,8 +1154,15 @@ function actionTarget(target) {
 }
 
 root.addEventListener("click", (event) => {
+  // Native pickers (dropdowns, date/time inputs) must open normally; their
+  // behaviour is handled by the change listener below, so never re-render on click.
+  if (event.target.matches("select, input[type='date'], input[type='time']")) return;
   const target = actionTarget(event.target);
   if (!target || target.disabled) return;
+  // Clicks inside the dialog panel are not backdrop clicks: without this guard,
+  // clicking a form field inside a modal would bubble up to the backdrop's
+  // close-modal action and dismiss the dialog (breaking the date picker).
+  if (target.classList?.contains("modal-backdrop") && event.target !== target) return;
   const action = target.dataset.action;
   const caseKey = target.dataset.case || state.selectedCase;
   const c = state.cases[caseKey];
