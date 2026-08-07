@@ -1008,6 +1008,22 @@ function buildEvidenceDraft(c) {
   return `Regenerated from attached evidence: N02 screening recorded blood pressure ${c.vitals.bloodPressure}, pulse ${c.vitals.pulse}, BMI ${c.vitals.bmi}; examination findings - appearance ${text(c.findings.appearance)}, cardiovascular ${text(c.findings.cardiovascular)}, respiratory ${text(c.findings.respiratory)}; laboratory results: ${labsText}. Doctor remarks: ${text(c.findings.remarks)}`;
 }
 
+function checkDetail(c, id) {
+  const isZh = state.locale === "zh";
+  const statusRow = (done) => field(copy("Status", "狀態"), done ? copy("Passed", "已通過") : copy("Not yet satisfied", "未達成"), done ? "success" : "warning");
+  if (id === "findings") {
+    return `${statusRow(c.findingsSaved)}<p>${isZh ? "系統核驗：D02 結構化檢查結果已由醫生完成並儲存。" : "System check: the D02 structured examination findings were completed and saved by the doctor."}</p>${Object.entries(c.findings).map(([key, value]) => field(copy(key.replaceAll(/([A-Z])/g, " $1"), key), value)).join("")}${field(copy("Saved by*", "儲存人*"), copy("Dr H. Pang · D02*", "H. Pang 醫生 · D02*"))}`;
+  }
+  if (id === "draft") {
+    return `${statusRow(c.draftGenerated)}<p>${isZh ? "系統核驗：AI 輔助草稿已根據已附加證據生成，並由醫生審閱及控制。" : "System check: the AI-assisted draft was generated from attached evidence and remains under doctor review and control."}</p>${field(copy("Doctor edits saved*", "醫生修改已儲存*"), c.draftSaved ? copy("Yes", "是") : copy("No", "否"))}<p class="note-block">${escapeHtml(c.draftSummary || text(c.findings.remarks))}</p>`;
+  }
+  if (id === "evidence") {
+    const rows = evidenceItems(c).map((item) => `<div class="evidence-item"><div><strong>${escapeHtml(text(item.label))}</strong><span>${escapeHtml(text(item.source))}</span></div>${status(item.done ? copy("Available", "已提供") : copy("Pending", "待完成"), item.done ? "success" : "warning")}</div>`).join("");
+    return `${statusRow(c.missingEvidence.length === 0)}<p>${isZh ? "系統核驗：所有必要證據必須附加後才能簽署。" : "System check: all mandatory evidence must be attached before sign-off."}</p>${rows}`;
+  }
+  return "";
+}
+
 function reportExtras(c) {
   const isZh = state.locale === "zh";
   const parts = [];
@@ -1055,11 +1071,11 @@ function doctorSign() {
     ? `<div class="submit-success" role="status"><div><strong>${isZh ? "提交成功" : "Submission successful"}</strong><span>${isZh ? "報告已成功提交至 PHKL 審核平台。你可以返回 Dashboard 繼續處理下一位病人。" : "The report has been submitted to the PHKL review platform. Return to the Dashboard to continue with the next patient."}</span></div>${button(copy("Back to Dashboard", "返回 Dashboard"), "back-list", { primary: true })}</div>`
     : "";
   const checklist = [
-    [copy("Structured findings reviewed", "已審閱結構化結果"), c.findingsSaved],
-    [copy("Report draft reviewed and refreshed*", "已審閱及更新報告草稿*"), c.draftGenerated],
-    [copy("Mandatory evidence complete", "必要證據已齊備"), evidenceReady],
+    ["findings", copy("Structured findings reviewed", "已審閱結構化結果"), c.findingsSaved],
+    ["draft", copy("Report draft reviewed and refreshed*", "已審閱及更新報告草稿*"), c.draftGenerated],
+    ["evidence", copy("Mandatory evidence complete", "必要證據已齊備"), evidenceReady],
   ];
-  return `<div class="page-heading"><div><span class="eyebrow">D04 · ${isZh ? "第 3 步（共 3 步）· 審閱、簽署及提交" : "STEP 3 OF 3 · REVIEW, SIGN AND SUBMIT"}</span><h1>${isZh ? "最終報告審閱" : "Final report review"}</h1><p>${isZh ? "醫生簽署會鎖定紀錄，並把完整電子報告套件提交至 PHKL 審核平台。" : "Doctor sign-off locks the record and submits the complete digital package to the PHKL review platform."}</p></div>${status(signState.label, signState.tone)}</div>${submittedNotice}<div class="content-with-rail">${panel(copy("Final clinical record", "最終臨床紀錄"), `<div class="summary-banner"><div><strong>${escapeHtml(c.applicant)}</strong><span>${c.caseId}</span></div><div><strong>${evidenceReady ? (isZh ? "證據套件完整" : "Evidence package complete") : (isZh ? "證據套件不完整" : "Evidence package incomplete")}</strong><span>${!evidenceReady ? escapeHtml(c.missingEvidence.join(" · ")) : reportReady ? (isZh ? "可提交" : "Ready to submit") : (isZh ? "報告步驟待完成" : "Report steps remain")}</span></div></div><article class="report-draft"><p>${escapeHtml(c.draftSummary || text(c.findings.remarks))}</p><p>${escapeHtml(text(reportReadinessCopy))}</p>${reportExtras(c)}</article><div class="signature-block"><span>${isZh ? "專業註冊" : "Professional registration"}</span><strong>Dr H. Pang · M12874*</strong><small>${isZh ? "簽署會建立不可更改的概念性審計事件。" : "Signing creates an immutable conceptual audit event."}</small></div>`)}${panel(copy("Automated checks before sign-off", "簽署前自動核驗"), `<p class="empty-note">${text(copy("System-verified status - no manual ticking required.", "系統自動核驗狀態，無需手動勾選。"))}</p><ul class="check-list">${checklist.map(([label, done]) => `<li class="${done ? "is-done" : "is-open"}">${escapeHtml(text(label))}</li>`).join("")}</ul>${priorStepNotice}${!evidenceReady ? `<div class="evidence-action evidence-action--warning"><strong>${isZh ? "需要護士跟進" : "Nurse follow-up required"}</strong><span>${isZh ? "血脂及糖化血紅素結果待完成。附加結果後才能簽署。" : "Lipids and HbA1c are pending. Attach the results before sign-off."}</span></div>${button(c.followUpRequested ? copy("Follow-up requested", "已要求跟進") : copy("Request nurse follow-up", "要求護士跟進"), "request-followup", { full: true, warning: true, disabled: c.followUpRequested })}` : ""}${button(c.reportSigned ? copy("Submitted to PHKL", "已提交 PHKL") : copy("Review, e-sign & submit", "審閱、電子簽署及提交"), "sign-report", { primary: true, full: true, disabled: !canSignReport })}`)}</div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">D04 · ${isZh ? "第 3 步（共 3 步）· 審閱、簽署及提交" : "STEP 3 OF 3 · REVIEW, SIGN AND SUBMIT"}</span><h1>${isZh ? "最終報告審閱" : "Final report review"}</h1><p>${isZh ? "醫生簽署會鎖定紀錄，並把完整電子報告套件提交至 PHKL 審核平台。" : "Doctor sign-off locks the record and submits the complete digital package to the PHKL review platform."}</p></div>${status(signState.label, signState.tone)}</div>${submittedNotice}<div class="content-with-rail">${panel(copy("Final clinical record", "最終臨床紀錄"), `<div class="summary-banner"><div><strong>${escapeHtml(c.applicant)}</strong><span>${c.caseId}</span></div><div><strong>${evidenceReady ? (isZh ? "證據套件完整" : "Evidence package complete") : (isZh ? "證據套件不完整" : "Evidence package incomplete")}</strong><span>${!evidenceReady ? escapeHtml(c.missingEvidence.join(" · ")) : reportReady ? (isZh ? "可提交" : "Ready to submit") : (isZh ? "報告步驟待完成" : "Report steps remain")}</span></div></div><article class="report-draft"><p>${escapeHtml(c.draftSummary || text(c.findings.remarks))}</p><p>${escapeHtml(text(reportReadinessCopy))}</p>${reportExtras(c)}</article><div class="signature-block"><span>${isZh ? "專業註冊" : "Professional registration"}</span><strong>Dr H. Pang · M12874*</strong><small>${isZh ? "簽署會建立不可更改的概念性審計事件。" : "Signing creates an immutable conceptual audit event."}</small></div>`)}${panel(copy("Automated checks before sign-off", "簽署前自動核驗"), `<p class="empty-note">${text(copy("System-verified status - no manual ticking required.", "系統自動核驗狀態，無需手動勾選。"))}</p><ul class="check-list">${checklist.map(([id, label, done]) => `<li class="${done ? "is-done" : "is-open"}"><button type="button" class="check-link" data-action="view-check" data-check="${id}">${escapeHtml(text(label))}</button></li>`).join("")}</ul>${priorStepNotice}${!evidenceReady ? `<div class="evidence-action evidence-action--warning"><strong>${isZh ? "需要護士跟進" : "Nurse follow-up required"}</strong><span>${isZh ? "血脂及糖化血紅素結果待完成。附加結果後才能簽署。" : "Lipids and HbA1c are pending. Attach the results before sign-off."}</span></div>${button(c.followUpRequested ? copy("Follow-up requested", "已要求跟進") : copy("Request nurse follow-up", "要求護士跟進"), "request-followup", { full: true, warning: true, disabled: c.followUpRequested })}` : ""}${button(c.reportSigned ? copy("Submitted to PHKL", "已提交 PHKL") : copy("Review, e-sign & submit", "審閱、電子簽署及提交"), "sign-report", { primary: true, full: true, disabled: !canSignReport })}`)}</div>`;
 }
 
 function operations() {
@@ -1153,6 +1169,16 @@ function renderModal() {
     title = item ? item.label : copy("Evidence details", "證據詳情");
     eyebrow = copy("Individual evidence item · synthetic*", "單項證據 · 模擬資料*");
     body = evidenceItemDetail(c, state.modal.evidence);
+  }
+  if (state.modal.type === "check-detail") {
+    const labels = {
+      findings: copy("Structured findings reviewed", "已審閱結構化結果"),
+      draft: copy("Report draft reviewed and refreshed*", "已審閱及更新報告草稿*"),
+      evidence: copy("Mandatory evidence complete", "必要證據已齊備"),
+    };
+    title = labels[state.modal.check] || copy("Automated check", "自動核驗");
+    eyebrow = copy("Automated check detail · system-verified*", "自動核驗詳情 · 系統核驗*");
+    body = checkDetail(c, state.modal.check);
   }
   if (state.modal.type === "profile") {
     title = copy("Patient profile and history", "病人檔案及病史");
@@ -1474,6 +1500,7 @@ root.addEventListener("click", (event) => {
   if (action === "view-blocker") state.modal = { type: "blocker", caseKey };
   if (action === "view-evidence") state.modal = { type: "evidence", caseKey };
   if (action === "view-evidence-item") state.modal = { type: "evidence-item", caseKey, evidence: target.dataset.evidence };
+  if (action === "view-check") state.modal = { type: "check-detail", caseKey, check: target.dataset.check };
   if (action === "close-modal") {
     focusAfterRender = state.modal?.returnSelector || "";
     state.modal = null;

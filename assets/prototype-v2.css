@@ -1472,3 +1472,18 @@ button.evidence-item--link:hover {
 .main-content .content-with-rail + .content-with-rail {
   margin-top: 14px;
 }
+
+/* Round 12: clickable automated-check items on D04 */
+.check-list .check-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.check-list .check-link:hover {
+  text-decoration: underline;
+}
