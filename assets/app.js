@@ -998,6 +998,16 @@ function evidencePackage(c) {
   return `<div class="evidence-package"><div class="evidence-package__summary"><div><span>${isZh ? "套件狀態" : "Package status"}</span><strong>${c.missingEvidence.length ? (isZh ? "不完整" : "Incomplete") : (isZh ? "完整" : "Complete")}</strong></div>${status(c.missingEvidence.length ? copy(`${c.missingEvidence.length} items pending`, `${c.missingEvidence.length} 項待完成`) : copy("All required evidence attached", "所有必要證據已附加"), c.missingEvidence.length ? "warning" : "success")}</div>${items.map((item) => `<button type="button" class="evidence-item evidence-item--link" data-action="view-evidence-item" data-case="${c.key}" data-evidence="${item.id}" aria-label="${isZh ? "查看證據詳情" : "View evidence details"}"><div><strong>${escapeHtml(text(item.label))}</strong><span>${escapeHtml(text(item.source))}</span></div>${status(item.done ? copy("Available", "已提供") : copy("Pending", "待完成"), item.done ? "success" : "warning")}</button>`).join("")}</div>`;
 }
 
+function buildEvidenceDraft(c) {
+  const isZh = state.locale === "zh";
+  const attached = c.labs.filter((lab) => lab.state !== "missing").map((lab) => `${text(lab.label)} ${text(lab.value)}`).join("; ");
+  const labsText = attached || (isZh ? "化驗結果待完成" : "laboratory results pending");
+  if (isZh) {
+    return `根據已附加證據重新生成：N02 篩查記錄血壓 ${c.vitals.bloodPressure}、脈搏 ${c.vitals.pulse}、BMI ${c.vitals.bmi}；醫生檢查 - 外觀${text(c.findings.appearance)}、心血管${text(c.findings.cardiovascular)}、呼吸${text(c.findings.respiratory)}；化驗結果：${labsText}。醫生備註：${text(c.findings.remarks)}`;
+  }
+  return `Regenerated from attached evidence: N02 screening recorded blood pressure ${c.vitals.bloodPressure}, pulse ${c.vitals.pulse}, BMI ${c.vitals.bmi}; examination findings - appearance ${text(c.findings.appearance)}, cardiovascular ${text(c.findings.cardiovascular)}, respiratory ${text(c.findings.respiratory)}; laboratory results: ${labsText}. Doctor remarks: ${text(c.findings.remarks)}`;
+}
+
 function doctorDraft() {
   const c = state.cases[state.selectedCase];
   const isZh = state.locale === "zh";
@@ -1005,7 +1015,7 @@ function doctorDraft() {
     return blockedScreen("D03", copy("Report preparation is not ready", "尚未可以準備報告"), copy("Complete and save the structured examination first.", "請先完成並儲存結構化臨床檢查。"), "doctor", "D02");
   }
   const statusCopy = c.missingEvidence.length ? copy("Laboratory results pending: Lipids and HbA1c. The doctor may review the draft, but final sign-off is blocked.", "化驗結果待完成：血脂及糖化血紅素。醫生可以審閱草稿，但最終簽署受阻。") : copy("All required evidence is attached. The draft can proceed to doctor review and sign-off.", "所有必要證據已附加。草稿可進入醫生審閱及簽署。" );
-  return `<div class="page-heading"><div><span class="eyebrow">D03 · ${isZh ? "報告及證據套件" : "REPORT AND EVIDENCE PACKAGE"}</span><h1>${isZh ? "AI 輔助報告草稿*" : "AI-assisted report draft*"}</h1><p>${isZh ? "草稿只根據可見證據生成，必須由醫生審閱及控制。" : "The draft is grounded only in visible evidence and remains under doctor control."}</p></div>${status(copy("Human review required", "需要人工審閱"), "info")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy("Report draft", "報告草稿"), `<div class="ai-banner"><strong>${isZh ? "證據來源清晰可追蹤" : "Grounded in traceable evidence"}</strong><span>${escapeHtml(text(statusCopy))}</span></div><article class="report-draft"><h3>${isZh ? "臨床檢查摘要" : "Clinical examination summary"}</h3><textarea class="draft-editor" rows="4" data-field="draft.summary" aria-label="${isZh ? "編輯臨床檢查摘要" : "Edit clinical examination summary"}">${escapeHtml(c.draftSummary || text(c.findings.remarks))}</textarea><h3>${isZh ? "臨床結論" : "Clinical conclusion"}</h3><p>${c.missingEvidence.length ? (isZh ? "評估待完成。必要化驗證據尚未齊備。" : "Assessment pending. Required laboratory evidence is incomplete.") : (isZh ? "臨床紀錄可提交 PHKL 審核。沒有作出自動保單決定。" : "The clinical record is ready for PHKL review. No automatic policy decision has been made.")}</p></article><p class="footnote">${isZh ? "* 概念性草稿及完整度支援。醫生保留臨床責任，PHKL 審核在 CMS 以外進行。" : "* Conceptual drafting and completeness support only. Clinical accountability stays with the doctor and PHKL review remains outside CMS."}</p><div class="action-bar action-bar--inside">${button(copy("Save draft", "儲存草稿"), "save-draft")}${c.draftSavedMsg ? `<span class="save-ok" role="status">${isZh ? "草稿已儲存成功" : "Draft saved successfully"}</span>` : ""}${button(copy("Regenerate from evidence*", "根據證據重新生成*"), "generate-draft", { quiet: true })}${button(copy("Continue to review", "繼續審閱"), "review-sign", { primary: true })}</div>`)}${panel(copy("Evidence package status", "證據套件狀態"), `${evidencePackage(c)}${c.missingEvidence.length ? `<div class="action-bar action-bar--inside">${button(copy("Request nurse follow-up", "要求護士跟進"), "request-followup", { warning: true, disabled: c.followUpRequested })}</div>` : ""}`)}</div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">D03 · ${isZh ? "報告及證據套件" : "REPORT AND EVIDENCE PACKAGE"}</span><h1>${isZh ? "AI 輔助報告草稿*" : "AI-assisted report draft*"}</h1><p>${isZh ? "草稿只根據可見證據生成，必須由醫生審閱及控制。" : "The draft is grounded only in visible evidence and remains under doctor control."}</p></div>${status(copy("Human review required", "需要人工審閱"), "info")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy("Report draft", "報告草稿"), `<div class="ai-banner"><strong>${isZh ? "證據來源清晰可追蹤" : "Grounded in traceable evidence"}</strong><span>${escapeHtml(text(statusCopy))}</span></div><article class="report-draft"><h3>${isZh ? "臨床檢查摘要" : "Clinical examination summary"}</h3><textarea class="draft-editor" rows="4" data-field="draft.summary" aria-label="${isZh ? "編輯臨床檢查摘要" : "Edit clinical examination summary"}">${escapeHtml(c.draftSummary || text(c.findings.remarks))}</textarea><h3>${isZh ? "臨床結論" : "Clinical conclusion"}</h3><p>${c.missingEvidence.length ? (isZh ? "評估待完成。必要化驗證據尚未齊備。" : "Assessment pending. Required laboratory evidence is incomplete.") : (isZh ? "臨床紀錄可提交 PHKL 審核。沒有作出自動保單決定。" : "The clinical record is ready for PHKL review. No automatic policy decision has been made.")}</p></article><p class="footnote">${isZh ? "* 概念性草稿及完整度支援。醫生保留臨床責任，PHKL 審核在 CMS 以外進行。" : "* Conceptual drafting and completeness support only. Clinical accountability stays with the doctor and PHKL review remains outside CMS."}</p><div class="action-bar action-bar--inside">${button(copy("Save draft", "儲存草稿"), "save-draft")}${c.draftSavedMsg ? `<span class="save-ok" role="status">${isZh ? "草稿已儲存成功" : "Draft saved successfully"}</span>` : ""}${button(copy("Regenerate from evidence*", "根據證據重新生成*"), "generate-draft", { quiet: true, disabled: Boolean(c.draftSaved) })}${button(copy("Continue to review", "繼續審閱"), "review-sign", { primary: true })}</div>`)}${panel(copy("Evidence package status", "證據套件狀態"), `${evidencePackage(c)}${c.missingEvidence.length ? `<div class="action-bar action-bar--inside">${button(copy("Request nurse follow-up", "要求護士跟進"), "request-followup", { warning: true, disabled: c.followUpRequested })}</div>` : ""}`)}</div>`;
 }
 
 function doctorSign() {
@@ -1338,12 +1348,15 @@ root.addEventListener("click", (event) => {
   if (action === "save-draft") {
     const draftValue = document.querySelector('[data-field="draft.summary"]')?.value ?? "";
     if (draftValue) c.draftSummary = draftValue;
+    c.draftSaved = true;
     c.draftSavedMsg = true;
     addAudit(c, copy("Dr H. Pang", "H. Pang 醫生"), copy("Report draft saved", "報告草稿已儲存"), copy("Doctor edits to the draft were saved and remain doctor-controlled.", "醫生對草稿的修改已儲存，並仍由醫生控制。"));
   }
   if (action === "generate-draft") {
+    if (c.draftSaved) return;
     c.draftGenerated = true;
-    c.draftSummary = "";
+    c.draftSummary = buildEvidenceDraft(c);
+    c.draftSaved = false;
     c.draftSavedMsg = false;
     addAudit(c, copy("AI assist*", "AI 輔助*"), copy("Report draft refreshed", "報告草稿已更新"), copy("Draft generated from visible evidence. Human review required.", "草稿根據可見證據生成，需要人工審閱。"));
   }
