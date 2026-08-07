@@ -880,16 +880,34 @@ function nurseScreening() {
   if (!c.nurseReady || c.adminBlockers.length) {
     return blockedScreen("N02", copy("Screening is not available", "暫不可進行篩查"), copy("Clinic Admin must resolve readiness requirements and route the case first.", "診所行政人員必須先處理準備要求並轉交個案。"), "clinic", "C02");
   }
-  const inputs = [
-    [copy("Height / weight", "身高／體重"), c.vitals.heightWeight],
-    [copy("BMI", "體重指數"), c.vitals.bmi],
-    [copy("Blood pressure", "血壓"), c.vitals.bloodPressure],
-    [copy("Pulse", "脈搏"), c.vitals.pulse],
-    [copy("Urine test", "尿液檢查"), c.vitals.urine],
-    [copy("Electrocardiogram", "心電圖"), c.vitals.ecg],
+  const vitalDefs = [
+    ["heightWeight", copy("Height / weight", "身高／體重")],
+    ["bmi", copy("BMI", "體重指數")],
+    ["bloodPressure", copy("Blood pressure", "血壓")],
+    ["pulse", copy("Pulse", "脈搏")],
+    ["urine", copy("Urine test", "尿液檢查")],
+    ["ecg", copy("Electrocardiogram", "心電圖")],
   ];
+  const step = c.screeningComplete ? "done" : (c.screeningStep || "capture");
+  const readings = vitalDefs.map(([key, label]) => field(label, c.vitals[key])).join("");
+  const stepMeta = {
+    capture: copy("Step 1 of 3 - Capture readings", "第 1 步（共 3 步）- 記錄數值"),
+    confirm: copy("Step 2 of 3 - Confirm readings", "第 2 步（共 3 步）- 確認數值"),
+    review: copy("Step 3 of 3 - Review and submit", "第 3 步（共 3 步）- 覆核及提交"),
+    done: copy("Screening submitted", "篩查已提交"),
+  };
+  let mainPanel;
+  if (step === "capture") {
+    mainPanel = panel(copy("Nurse assessment", "護士評估"), `<div class="form-grid form-grid--two">${vitalDefs.map(([key, label]) => `<label class="form-field"><span>${escapeHtml(text(label))}</span><input data-field="vitals.${key}" value="${escapeHtml(text(c.vitals[key]))}" aria-label="${escapeHtml(text(label))}"></label>`).join("")}</div><div class="action-bar action-bar--inside">${button(copy("Confirm readings", "確認數值"), "confirm-readings", { primary: true })}</div>`, stepMeta.capture);
+  } else if (step === "confirm") {
+    mainPanel = panel(copy("Confirm readings", "確認數值"), `<p class="empty-note">${isZh ? "請核對每項數值與設備讀數一致，確認後進入覆核。" : "Check each reading against the device output, then confirm to proceed to review."}</p>${readings}<div class="action-bar action-bar--inside">${button(copy("Back to edit", "返回修改"), "edit-readings", { quiet: true })}${button(copy("Confirm values", "確認無誤"), "confirm-values", { primary: true })}</div>`, stepMeta.confirm);
+  } else if (step === "review") {
+    mainPanel = panel(copy("Review and submit", "覆核及提交"), `${readings}<div class="evidence-action evidence-action--warning"><strong>${isZh ? "提交前覆核" : "Review before submitting"}</strong><span>${isZh ? "提交後數值將鎖定為本次篩查紀錄；如需修改可返回上一步。" : "Submitting locks these readings as the screening record. Use Back to previous step if anything needs correcting."}</span></div><div class="action-bar action-bar--inside">${button(copy("Back to previous step", "返回上一步"), "back-confirm", { quiet: true })}${button(copy("Submit screening", "提交篩查"), "submit-screening", { primary: true })}</div>`, stepMeta.review);
+  } else {
+    mainPanel = panel(copy("Nurse assessment", "護士評估"), `<div class="evidence-action evidence-action--success"><strong>${isZh ? "篩查已提交" : "Screening submitted"}</strong><span>${isZh ? "數值已鎖定為本次篩查紀錄。如需修改，請點擊修改數值。" : "Readings are locked as the screening record. Use Amend readings if a correction is needed."}</span></div>${readings}<div class="action-bar action-bar--inside">${button(copy("Amend readings", "修改數值"), "edit-readings", { quiet: true })}${button(copy("Review handover", "審閱交接"), "review-handover", { primary: true })}</div>`, stepMeta.done);
+  }
   const labRows = c.labs.map((lab) => `<div class="evidence-item"><div><strong>${escapeHtml(text(lab.label))}</strong><span>${escapeHtml(text(lab.source))}</span></div>${status(lab.value, lab.state === "missing" ? "warning" : "success")}</div>`).join("");
-  return `<div class="page-heading"><div><span class="eyebrow">N02 · ${isZh ? "篩查及證據記錄" : "SCREENING AND EVIDENCE"}</span><h1>${isZh ? "篩查及生命體徵" : "Screening and vitals"}</h1><p>${isZh ? "記錄結構化篩查資料，並讓化驗狀態在交接時保持可見。" : "Capture structured screening data and keep laboratory status visible through handover."}</p></div>${status(c.screeningComplete ? copy("Screening complete", "篩查完成") : copy("In progress", "進行中"), c.screeningComplete ? "success" : "info")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy("Nurse assessment", "護士評估"), `<div class="form-grid form-grid--two">${inputs.map(([label, value]) => `<label class="form-field"><span>${escapeHtml(text(label))}</span><input value="${escapeHtml(text(value))}" aria-label="${escapeHtml(text(label))}"></label>`).join("")}</div><div class="action-bar action-bar--inside">${button(c.screeningComplete ? copy("Screening completed", "篩查已完成") : copy("Complete screening", "完成篩查"), "complete-screening", { primary: true, disabled: c.screeningComplete })}${button(copy("Review handover", "審閱交接"), "review-handover")}</div>`, copy("All values are synthetic*", "所有數值均為模擬資料*"))}${panel(copy("Laboratory evidence", "化驗證據"), `${labRows}${c.missingEvidence.length ? `<div class="evidence-action evidence-action--warning"><strong>${isZh ? "化驗待完成" : "Laboratory results pending"}</strong><span>${isZh ? "可繼續檢查，但報告簽署仍然受阻。" : "Examination may proceed, but report sign-off remains blocked."}</span></div>` : `<div class="evidence-action evidence-action--success"><strong>${isZh ? "證據已齊備" : "Evidence complete"}</strong><span>${isZh ? "所有必要化驗結果已附加。" : "All mandatory laboratory results are attached."}</span></div>`}`)}</div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">N02 · ${isZh ? "篩查及證據記錄" : "SCREENING AND EVIDENCE"}</span><h1>${isZh ? "篩查及生命體徵" : "Screening and vitals"}</h1><p>${isZh ? "記錄結構化篩查資料，並讓化驗狀態在交接時保持可見。" : "Capture structured screening data and keep laboratory status visible through handover."}</p></div>${status(c.screeningComplete ? copy("Screening complete", "篩查完成") : copy("In progress", "進行中"), c.screeningComplete ? "success" : "info")}</div><div class="content-with-rail content-with-rail--wide">${mainPanel}${panel(copy("Laboratory evidence", "化驗證據"), `${labRows}${c.missingEvidence.length ? `<div class="evidence-action evidence-action--warning"><strong>${isZh ? "化驗待完成" : "Laboratory results pending"}</strong><span>${isZh ? "可繼續檢查，但報告簽署仍然受阻。" : "Examination may proceed, but report sign-off remains blocked."}</span></div>` : `<div class="evidence-action evidence-action--success"><strong>${isZh ? "證據已齊備" : "Evidence complete"}</strong><span>${isZh ? "所有必要化驗結果已附加。" : "All mandatory laboratory results are attached."}</span></div>`}`)}</div>`;
 }
 
 function nurseHandover() {
@@ -946,15 +964,38 @@ function doctorExamExtras(c) {
   return `<div class="three-column doctor-layout">${panel(copy("Booking remarks", "預約備註"), `<p class="note-block">${escapeHtml(text(c.bookingRemarks))}</p>`, copy("Context captured before the patient visit", "病人到訪前記錄的上下文"))}${panel(copy("Patient record follow-up", "病人紀錄跟進"), `<div class="form-grid form-grid--two"><label class="form-field"><span>${isZh ? "需要跟進" : "Follow-up required"}</span><select data-field="followUp.required"><option value="yes" ${c.followUp.required ? "selected" : ""}>${isZh ? "是" : "Yes"}</option><option value="no" ${c.followUp.required ? "" : "selected"}>${isZh ? "否" : "No"}</option></select></label>${c.followUp.required ? `<label class="form-field"><span>${isZh ? "跟進負責人" : "Follow-up owner"}</span><select data-field="followUp.owner">${nurseOptions}</select></label><label class="form-field"><span>${isZh ? "到期日" : "Due date"}</span><input type="date" data-field="followUp.dueDate" value="${c.followUp.dueDate}"></label><label class="form-field"><span>${isZh ? "狀態" : "Status"}</span><select data-field="followUp.status">${statusOptions}</select></label>` : `<p class="empty-note">${isZh ? "此個案無需跟進。改為「是」即可展開跟進表單。" : "No follow-up required for this case. Switch to Yes to expand the form."}</p>`}</div>${c.followUp.required ? `<label class="form-field"><span>${isZh ? "跟進備註" : "Follow-up notes"}</span><textarea rows="3" data-field="followUp.notes">${escapeHtml(c.followUp.notes)}</textarea></label><div class="action-bar action-bar--inside">${button(copy("Save follow-up", "儲存跟進"), "save-followup")}${c.followUpSavedMsg ? `<span class="save-ok" role="status">${isZh ? "已儲存成功，並會顯示於報告中" : "Saved successfully - included in the report"}</span>` : ""}</div>` : ""}`, "", "span-two")}</div><div class="content-with-rail content-with-rail--wide">${panel(copy("Additional customer information", "補充客戶資料"), `<label class="form-field"><span>${isZh ? "補充資料" : "Supplementary information"}</span><textarea rows="3" data-field="supplementary.info" placeholder="${isZh ? "記錄檢查過程中發現的補充客戶資料" : "Capture additional customer information found during the process"}">${escapeHtml(c.supplementary.info)}</textarea></label><label class="form-field"><span>${isZh ? "補充檢查或評估" : "Supplementary tests or assessments"}</span><input data-field="supplementary.tests" value="${escapeHtml(c.supplementary.tests)}" placeholder="${isZh ? "例如：超聲波、額外血液檢查" : "e.g. ultrasound, additional blood tests"}"></label><div class="action-bar action-bar--inside">${button(copy("Save supplementary details", "儲存補充資料"), "save-supplementary")}${c.supplementarySavedMsg ? `<span class="save-ok" role="status">${isZh ? "已儲存成功，並會顯示於報告中" : "Saved successfully - included in the report"}</span>` : ""}</div>`, copy("Documented by the doctor during the process", "由醫生於檢查過程中記錄"))}${panel(copy("Patient profile and reports", "病人檔案及報告"), `<div class="action-stack">${button(copy("View patient profile", "查看病人檔案"), "view-profile", { full: true })}${button(copy("Generate Underwriting Report", "生成核保報告"), "uw-report", { full: true, primary: true })}</div>`, copy("History, evidence and consolidated PDF output", "病史、證據及綜合 PDF 輸出"))}</div>`;
 }
 
+function evidenceItems(c) {
+  return [
+    { id: "questionnaire", label: copy("Health questionnaire", "健康問卷"), done: true, source: copy("Customer record*", "客戶紀錄*") },
+    { id: "screening", label: copy("Nurse screening", "護士篩查"), done: c.screeningComplete, source: copy("N02", "N02") },
+    { id: "findings", label: copy("Doctor findings", "醫生檢查結果"), done: c.findingsSaved, source: copy("D02", "D02") },
+    ...c.labs.map((lab, i) => ({ id: `lab-${i}`, label: lab.label, done: lab.state !== "missing", source: lab.source })),
+  ];
+}
+
+function evidenceItemDetail(c, id) {
+  const isZh = state.locale === "zh";
+  const statusRow = (done) => field(copy("Status", "狀態"), done ? copy("Available", "已提供") : copy("Pending", "待完成"), done ? "success" : "warning");
+  if (id === "questionnaire") {
+    return `${field(copy("Document", "文件"), copy("Health questionnaire", "健康問卷"))}${field(copy("Source", "來源"), copy("Customer record*", "客戶紀錄*"))}${statusRow(true)}${field(copy("Completed*", "完成時間*"), copy("By the applicant before the visit*", "申請人於到訪前完成*"))}${field(copy("Key declarations*", "主要申報*"), copy("No major conditions declared*", "沒有申報重大疾病*"))}`;
+  }
+  if (id === "screening") {
+    return `${statusRow(c.screeningComplete)}${Object.entries(c.vitals).map(([key, value]) => field(copy(key.replaceAll(/([A-Z])/g, " $1"), key), value)).join("")}${field(copy("Captured by*", "記錄人*"), copy("Nurse K. Tsang · N02 screening*", "護士 K. Tsang · N02 篩查*"))}`;
+  }
+  if (id === "findings") {
+    return `${statusRow(c.findingsSaved)}${Object.entries(c.findings).map(([key, value]) => field(copy(key.replaceAll(/([A-Z])/g, " $1"), key), value)).join("")}${field(copy("Saved by*", "儲存人*"), copy("Dr H. Pang · D02 examination*", "H. Pang 醫生 · D02 檢查*"))}`;
+  }
+  const lab = c.labs[Number(String(id).replace("lab-", ""))];
+  if (lab) {
+    return `${field(copy("Test", "檢驗項目"), lab.label)}${field(copy("Result", "結果"), lab.value)}${field(copy("Source", "來源"), lab.source)}${statusRow(lab.state !== "missing")}${field(copy("Reference range*", "參考範圍*"), copy("Within clinic reference range*", "於診所參考範圍內*"))}${field(copy("Reported*", "報告時間*"), copy("Same day · laboratory report*", "即日 · 化驗報告*"))}`;
+  }
+  return `<p class="empty-note">${isZh ? "找不到證據項目。" : "Evidence item not found."}</p>`;
+}
+
 function evidencePackage(c) {
   const isZh = state.locale === "zh";
-  const items = [
-    [copy("Health questionnaire", "健康問卷"), true, copy("Customer record*", "客戶紀錄*")],
-    [copy("Nurse screening", "護士篩查"), c.screeningComplete, copy("N02", "N02")],
-    [copy("Doctor findings", "醫生檢查結果"), c.findingsSaved, copy("D02", "D02")],
-    ...c.labs.map((lab) => [lab.label, lab.state !== "missing", lab.source]),
-  ];
-  return `<div class="evidence-package"><div class="evidence-package__summary"><div><span>${isZh ? "套件狀態" : "Package status"}</span><strong>${c.missingEvidence.length ? (isZh ? "不完整" : "Incomplete") : (isZh ? "完整" : "Complete")}</strong></div>${status(c.missingEvidence.length ? copy(`${c.missingEvidence.length} items pending`, `${c.missingEvidence.length} 項待完成`) : copy("All required evidence attached", "所有必要證據已附加"), c.missingEvidence.length ? "warning" : "success")}</div>${items.map(([label, done, source]) => `<button type="button" class="evidence-item evidence-item--link" data-action="view-evidence" data-case="${c.key}" aria-label="${isZh ? "查看證據詳情" : "View evidence details"}"><div><strong>${escapeHtml(text(label))}</strong><span>${escapeHtml(text(source))}</span></div>${status(done ? copy("Available", "已提供") : copy("Pending", "待完成"), done ? "success" : "warning")}</button>`).join("")}</div>`;
+  const items = evidenceItems(c);
+  return `<div class="evidence-package"><div class="evidence-package__summary"><div><span>${isZh ? "套件狀態" : "Package status"}</span><strong>${c.missingEvidence.length ? (isZh ? "不完整" : "Incomplete") : (isZh ? "完整" : "Complete")}</strong></div>${status(c.missingEvidence.length ? copy(`${c.missingEvidence.length} items pending`, `${c.missingEvidence.length} 項待完成`) : copy("All required evidence attached", "所有必要證據已附加"), c.missingEvidence.length ? "warning" : "success")}</div>${items.map((item) => `<button type="button" class="evidence-item evidence-item--link" data-action="view-evidence-item" data-case="${c.key}" data-evidence="${item.id}" aria-label="${isZh ? "查看證據詳情" : "View evidence details"}"><div><strong>${escapeHtml(text(item.label))}</strong><span>${escapeHtml(text(item.source))}</span></div>${status(item.done ? copy("Available", "已提供") : copy("Pending", "待完成"), item.done ? "success" : "warning")}</button>`).join("")}</div>`;
 }
 
 function doctorDraft() {
@@ -1026,7 +1067,7 @@ function renderWorkspace() {
   const detailScreens = {
     C02: ["C01", copy("Back to list", "返回列表")],
     N02: ["N01", copy("Back to list", "返回列表")],
-    N03: ["N01", copy("Back to list", "返回列表")],
+    N03: ["N02", copy("Back to previous step", "返回上一步")],
     D02: ["D01", copy("Back to list", "返回列表")],
     D03: ["D02", copy("Back to previous step", "返回上一步")],
     D04: ["D03", copy("Back to previous step", "返回上一步")],
@@ -1084,6 +1125,12 @@ function renderModal() {
   if (state.modal.type === "evidence") {
     title = copy("Evidence details", "證據詳情");
     body = `${Object.entries(c.vitals).map(([key, value]) => field(copy(key.replaceAll(/([A-Z])/g, " $1"), key), value)).join("")}${evidencePackage(c)}`;
+  }
+  if (state.modal.type === "evidence-item") {
+    const item = evidenceItems(c).find((it) => it.id === state.modal.evidence);
+    title = item ? item.label : copy("Evidence details", "證據詳情");
+    eyebrow = copy("Individual evidence item · synthetic*", "單項證據 · 模擬資料*");
+    body = evidenceItemDetail(c, state.modal.evidence);
   }
   if (state.modal.type === "profile") {
     title = copy("Patient profile and history", "病人檔案及病史");
@@ -1243,6 +1290,26 @@ root.addEventListener("click", (event) => {
     c.screeningComplete = true;
     addAudit(c, copy("Nurse K. Tsang", "護士 K. Tsang"), copy("Screening completed", "篩查已完成"), copy("Vitals, urine test and ECG status were saved.", "生命體徵、尿液檢查及心電圖狀態已儲存。"));
   }
+  if (action === "confirm-readings") {
+    document.querySelectorAll('[data-field^="vitals."]').forEach((el) => {
+      const key = el.dataset.field.slice(7);
+      if (el.value) c.vitals[key] = el.value;
+    });
+    c.screeningStep = "confirm";
+  }
+  if (action === "edit-readings") {
+    c.screeningComplete = false;
+    c.screeningStep = "capture";
+  }
+  if (action === "confirm-values") c.screeningStep = "review";
+  if (action === "back-confirm") c.screeningStep = "confirm";
+  if (action === "submit-screening") {
+    if (!c.screeningComplete) {
+      c.screeningComplete = true;
+      c.screeningStep = "capture";
+      addAudit(c, copy("Nurse K. Tsang", "護士 K. Tsang"), copy("Screening submitted", "篩查已提交"), copy("Vitals, urine test and ECG readings were confirmed, reviewed and locked.", "生命體徵、尿液檢查及心電圖數值已確認、覆核並鎖定。"));
+    }
+  }
   if (action === "review-handover") { state.selectedCase = caseKey; state.screen = "N03"; }
   if (action === "handover" && c.screeningComplete) {
     c.handoverComplete = true;
@@ -1381,6 +1448,7 @@ root.addEventListener("click", (event) => {
   if (action === "view-record") state.modal = { type: "record", caseKey };
   if (action === "view-blocker") state.modal = { type: "blocker", caseKey };
   if (action === "view-evidence") state.modal = { type: "evidence", caseKey };
+  if (action === "view-evidence-item") state.modal = { type: "evidence-item", caseKey, evidence: target.dataset.evidence };
   if (action === "close-modal") {
     focusAfterRender = state.modal?.returnSelector || "";
     state.modal = null;
