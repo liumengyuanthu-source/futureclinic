@@ -1270,6 +1270,13 @@ a:focus-visible {
   font-size: 13px;
 }
 
+.save-ok {
+  align-self: center;
+  color: var(--phkl-success);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .note-block {
   margin: 0;
   padding: 12px 14px;
@@ -1358,20 +1365,33 @@ a:focus-visible {
   body * {
     visibility: hidden;
   }
-  .uw-report,
-  .uw-report * {
+  .modal,
+  .modal * {
     visibility: visible;
   }
-  .uw-report {
+  .modal {
     position: absolute;
     inset: 0 auto auto 0;
     width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
     border: none;
     border-radius: 0;
+    box-shadow: none;
+  }
+  .modal__body {
+    max-height: none;
+    overflow: visible;
   }
   .modal-backdrop {
     position: static;
     background: none;
+    padding: 0;
+  }
+  .modal .action-bar,
+  .modal__header .button {
+    display: none;
   }
 }
 

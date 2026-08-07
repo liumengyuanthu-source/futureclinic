@@ -76,6 +76,9 @@ test("ships the 04 Aug 2026 frontend enhancements", () => {
     "Shared with credential for underwriting",
     "view-appt",
     "visit-block",
+    'data-field="findings.',
+    "Nurse C. Lau",
+    "save-ok",
   ]) {
     assert.ok(app.includes(label), `missing enhancement: ${label}`);
   }
