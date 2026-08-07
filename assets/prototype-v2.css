@@ -1464,3 +1464,11 @@ button.evidence-item--link:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Round 11: vertical separation between stacked layout grids (D02 extras) */
+.main-content .three-column + .three-column,
+.main-content .three-column + .content-with-rail,
+.main-content .content-with-rail + .three-column,
+.main-content .content-with-rail + .content-with-rail {
+  margin-top: 14px;
+}
