@@ -1240,6 +1240,36 @@ a:focus-visible {
   margin-bottom: 0;
 }
 
+.back-bar {
+  margin: 0 0 14px;
+}
+
+.submit-success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  border: 1px solid var(--phkl-danger);
+  border-left: 4px solid var(--phkl-danger);
+  border-radius: 10px;
+  background: #fdf3f2;
+}
+
+.submit-success strong {
+  display: block;
+  color: var(--phkl-danger);
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.submit-success span {
+  color: var(--phkl-danger);
+  font-size: 13px;
+}
+
 .note-block {
   margin: 0;
   padding: 12px 14px;

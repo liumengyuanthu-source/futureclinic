@@ -723,7 +723,7 @@ function presetLabel(preset) {
 
 function filterBar() {
   const isZh = state.locale === "zh";
-  const presets = ["today", "tomorrow", "yesterday", "last7", "last30"]
+  const presets = ["tomorrow", "today", "yesterday", "last7", "last30"]
     .map((p) => `<button type="button" class="chip ${state.filter.preset === p ? "is-active" : ""}" data-action="filter-preset" data-preset="${p}">${escapeHtml(text(presetLabel(p)))}</button>`)
     .join("");
   return `<div class="filter-bar"><div class="filter-bar__presets"><span>${isZh ? "時段" : "Period"}</span>${presets}</div><div class="filter-bar__range"><label><span>${isZh ? "由" : "From"}</span><input type="date" data-action="filter-from" value="${state.filter.from}"></label><label><span>${isZh ? "至" : "To"}</span><input type="date" data-action="filter-to" value="${state.filter.to}"></label></div></div>`;
@@ -983,12 +983,15 @@ function doctorSign() {
   const priorStepNotice = evidenceReady && !reportReady
     ? `<div class="evidence-action evidence-action--warning"><strong>${isZh ? "需要完成前置步驟" : "Prior steps required"}</strong><span>${escapeHtml(text(copy("Complete the examination and refresh the report draft before sign-off.", "簽署前請完成臨床檢查並更新報告草稿。")))}</span></div>`
     : "";
+  const submittedNotice = c.reportSigned
+    ? `<div class="submit-success" role="status"><div><strong>${isZh ? "提交成功" : "Submission successful"}</strong><span>${isZh ? "報告已成功提交至 PHKL 審核平台。你可以返回 Dashboard 繼續處理下一位病人。" : "The report has been submitted to the PHKL review platform. Return to the Dashboard to continue with the next patient."}</span></div>${button(copy("Back to Dashboard", "返回 Dashboard"), "back-list", { primary: true })}</div>`
+    : "";
   const checklist = [
     [copy("Structured findings reviewed", "已審閱結構化結果"), c.findingsSaved],
     [copy("Report draft reviewed and refreshed*", "已審閱及更新報告草稿*"), c.draftGenerated],
     [copy("Mandatory evidence complete", "必要證據已齊備"), evidenceReady],
   ];
-  return `<div class="page-heading"><div><span class="eyebrow">D04 · ${isZh ? "審閱、簽署及提交" : "REVIEW, SIGN AND SUBMIT"}</span><h1>${isZh ? "最終報告審閱" : "Final report review"}</h1><p>${isZh ? "醫生簽署會鎖定紀錄，並把完整電子報告套件提交至 PHKL 審核平台。" : "Doctor sign-off locks the record and submits the complete digital package to the PHKL review platform."}</p></div>${status(signState.label, signState.tone)}</div><div class="content-with-rail">${panel(copy("Final clinical record", "最終臨床紀錄"), `<div class="summary-banner"><div><strong>${escapeHtml(c.applicant)}</strong><span>${c.caseId}</span></div><div><strong>${evidenceReady ? (isZh ? "證據套件完整" : "Evidence package complete") : (isZh ? "證據套件不完整" : "Evidence package incomplete")}</strong><span>${!evidenceReady ? escapeHtml(c.missingEvidence.join(" · ")) : reportReady ? (isZh ? "可提交" : "Ready to submit") : (isZh ? "報告步驟待完成" : "Report steps remain")}</span></div></div><article class="report-draft"><p>${escapeHtml(text(c.findings.remarks))}</p><p>${escapeHtml(text(reportReadinessCopy))}</p></article><div class="signature-block"><span>${isZh ? "專業註冊" : "Professional registration"}</span><strong>Dr H. Pang · M12874*</strong><small>${isZh ? "簽署會建立不可更改的概念性審計事件。" : "Signing creates an immutable conceptual audit event."}</small></div>`)}${panel(copy("Before you sign", "簽署前檢查"), `<ul class="check-list">${checklist.map(([label, done]) => `<li class="${done ? "is-done" : "is-open"}">${escapeHtml(text(label))}</li>`).join("")}</ul>${priorStepNotice}${!evidenceReady ? `<div class="evidence-action evidence-action--warning"><strong>${isZh ? "需要護士跟進" : "Nurse follow-up required"}</strong><span>${isZh ? "血脂及糖化血紅素結果待完成。附加結果後才能簽署。" : "Lipids and HbA1c are pending. Attach the results before sign-off."}</span></div>${button(c.followUpRequested ? copy("Follow-up requested", "已要求跟進") : copy("Request nurse follow-up", "要求護士跟進"), "request-followup", { full: true, warning: true, disabled: c.followUpRequested })}` : ""}${button(c.reportSigned ? copy("Submitted to PHKL", "已提交 PHKL") : copy("Review, e-sign & submit", "審閱、電子簽署及提交"), "sign-report", { primary: true, full: true, disabled: !canSignReport })}`)}</div>`;
+  return `<div class="page-heading"><div><span class="eyebrow">D04 · ${isZh ? "審閱、簽署及提交" : "REVIEW, SIGN AND SUBMIT"}</span><h1>${isZh ? "最終報告審閱" : "Final report review"}</h1><p>${isZh ? "醫生簽署會鎖定紀錄，並把完整電子報告套件提交至 PHKL 審核平台。" : "Doctor sign-off locks the record and submits the complete digital package to the PHKL review platform."}</p></div>${status(signState.label, signState.tone)}</div>${submittedNotice}<div class="content-with-rail">${panel(copy("Final clinical record", "最終臨床紀錄"), `<div class="summary-banner"><div><strong>${escapeHtml(c.applicant)}</strong><span>${c.caseId}</span></div><div><strong>${evidenceReady ? (isZh ? "證據套件完整" : "Evidence package complete") : (isZh ? "證據套件不完整" : "Evidence package incomplete")}</strong><span>${!evidenceReady ? escapeHtml(c.missingEvidence.join(" · ")) : reportReady ? (isZh ? "可提交" : "Ready to submit") : (isZh ? "報告步驟待完成" : "Report steps remain")}</span></div></div><article class="report-draft"><p>${escapeHtml(text(c.findings.remarks))}</p><p>${escapeHtml(text(reportReadinessCopy))}</p></article><div class="signature-block"><span>${isZh ? "專業註冊" : "Professional registration"}</span><strong>Dr H. Pang · M12874*</strong><small>${isZh ? "簽署會建立不可更改的概念性審計事件。" : "Signing creates an immutable conceptual audit event."}</small></div>`)}${panel(copy("Before you sign", "簽署前檢查"), `<ul class="check-list">${checklist.map(([label, done]) => `<li class="${done ? "is-done" : "is-open"}">${escapeHtml(text(label))}</li>`).join("")}</ul>${priorStepNotice}${!evidenceReady ? `<div class="evidence-action evidence-action--warning"><strong>${isZh ? "需要護士跟進" : "Nurse follow-up required"}</strong><span>${isZh ? "血脂及糖化血紅素結果待完成。附加結果後才能簽署。" : "Lipids and HbA1c are pending. Attach the results before sign-off."}</span></div>${button(c.followUpRequested ? copy("Follow-up requested", "已要求跟進") : copy("Request nurse follow-up", "要求護士跟進"), "request-followup", { full: true, warning: true, disabled: c.followUpRequested })}` : ""}${button(c.reportSigned ? copy("Submitted to PHKL", "已提交 PHKL") : copy("Review, e-sign & submit", "審閱、電子簽署及提交"), "sign-report", { primary: true, full: true, disabled: !canSignReport })}`)}</div>`;
 }
 
 function operations() {
@@ -1015,6 +1018,10 @@ function renderWorkspace() {
   if (state.screen === "D04") content = doctorSign();
   if (state.screen === "D05") content = doctorCalendar();
   if (state.screen === "O01") content = operations();
+  const detailScreens = { C02: "C01", N02: "N01", N03: "N01", D02: "D01", D03: "D01", D04: "D01" };
+  if (detailScreens[state.screen]) {
+    content = `<div class="back-bar">${button(copy("Back to list", "返回列表"), "back-list", { quiet: true })}</div>${content}`;
+  }
   return renderShell(content);
 }
 
@@ -1198,6 +1205,7 @@ root.addEventListener("click", (event) => {
   }
   if (action === "set-role") navigate(target.dataset.role, roleConfig[target.dataset.role].defaultScreen);
   if (action === "nav") state.screen = target.dataset.screen;
+  if (action === "back-list") state.screen = roleConfig[state.role].defaultScreen;
   if (action === "open-case") { state.selectedCase = caseKey; state.screen = "C02"; }
   if (action === "resolve-admin") {
     c.adminBlockers = [];
